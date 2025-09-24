@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <TimeLib.h>
 #include <Adafruit_NeoPixel.h>
-#define PIN_RGB     48      // GPIO38 comme indiqué
+#define PIN_RGB     21      // GPIO38 comme indiqué
 #define NUMPIXELS   1       // 1 LED
 
 #include "i2c.h"
@@ -57,7 +57,7 @@ void setup() {
   // Load configuration from EEPROM
   begin_config();
 
-  Wire.begin(8, 9);
+  Wire.begin(9, 8);
   pixels.begin();            // Initialise la LED
   pixels.setBrightness(10);  // Réduit l’intensité globale (0–255)
   pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // Rouge

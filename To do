@@ -1,0 +1,7 @@
+To do
+Vérifier cablage du moteur A1 (moteur Haut minute) (implémenter, à vérifier)
+Corriger le pinout des câbles FFC Droite, gauche slave (implémenter, à vérifier)
+Corriger le pinout des câbles FFC Droite, gauche master 
+Sur les 6 TMC2209 repasser en microstep par défaut 1/8 ce qui donne 5760 steps pour faire un tour de cadran, largement suffisant
+Ajouter des trous de fixations sur la carte master
+Inverser l'empreinte des 3 moteurs (implémenter, à vérifier)
