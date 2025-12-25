@@ -142,140 +142,138 @@ const t_full_clock d_IIII = {digit_I, digit_I, digit_I, digit_I};
 // See docs/CHOREOGRAPHIES.md for documentation
 // ============================================
 
-// SPINNING: All hands pointing up (0°)
+// SPINNING: Vertical lines pointing up/down (visible |)
 const t_digit digit_spin_up = {
-  0, 0,
-  0, 0,
-  0, 0,
-  0, 0,
-  0, 0,
-  0, 0
+  0, 180,    // vertical line |
+  0, 180,
+  0, 180,
+  0, 180,
+  0, 180,
+  0, 180
 };
 
-// SPINNING: All hands pointing down (180°)
+// SPINNING: Vertical lines pointing down/up (visible |)
 const t_digit digit_spin_down = {
-  180, 180,
-  180, 180,
-  180, 180,
-  180, 180,
-  180, 180,
-  180, 180
+  180, 0,    // vertical line | (inverted rotation)
+  180, 0,
+  180, 0,
+  180, 0,
+  180, 0,
+  180, 0
 };
 
-// SPINNING: All hands pointing right (90°)
+// SPINNING: Horizontal lines (visible -)
 const t_digit digit_spin_right = {
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90
+  270, 90,   // horizontal line -
+  270, 90,
+  270, 90,
+  270, 90,
+  270, 90,
+  270, 90
 };
 
 const t_full_clock d_spin_up = {digit_spin_up, digit_spin_up, digit_spin_up, digit_spin_up};
 const t_full_clock d_spin_down = {digit_spin_down, digit_spin_down, digit_spin_down, digit_spin_down};
 const t_full_clock d_spin_right = {digit_spin_right, digit_spin_right, digit_spin_right, digit_spin_right};
 
-// SQUARES: Diamond/square pattern
-// Top row: pointing to bottom-right corner (135°)
-// Middle row: X pattern (135° and 45° alternating)
-// Bottom row: pointing to top-left corner (315°)
+// SQUARES: Diamond/square pattern with L-shapes
+// Each clock forms an L-shape or corner
 const t_digit digit_squares_a = {
-  135, 135,   // top: ↘↘
-  135, 45,    // middle: ↘↗ (X)
-  315, 315,   // bottom: ↖↖
-  135, 135,
-  45, 135,    // middle: ↗↘ (X inverted)
-  315, 315
+  0, 90,      // top: L shape ┐
+  270, 180,   // middle: L shape └
+  0, 90,      // bottom: L shape ┐
+  180, 270,   // top: L shape ┘
+  90, 0,      // middle: L shape ┌
+  180, 270    // bottom: L shape ┘
 };
 
 const t_digit digit_squares_b = {
-  225, 225,   // top: ↙↙
-  45, 135,    // middle: ↗↘
-  45, 45,     // bottom: ↗↗
-  225, 225,
-  135, 45,    // middle: ↘↗
-  45, 45
+  180, 270,   // top: L shape ┘
+  90, 0,      // middle: L shape ┌
+  180, 270,   // bottom: L shape ┘
+  0, 90,      // top: L shape ┐
+  270, 180,   // middle: L shape └
+  0, 90       // bottom: L shape ┐
 };
 
 const t_full_clock d_squares = {digit_squares_a, digit_squares_b, digit_squares_a, digit_squares_b};
 
-// SYMMETRICAL: Left side pointing left (270°)
+// SYMMETRICAL: Left side - arrows pointing left (< shape)
 const t_digit digit_sym_left = {
+  315, 225,   // top: V pointing left <
+  270, 270,   // middle: both left (will overlap but that's OK for center line)
+  225, 315,   // bottom: V pointing left <
+  315, 225,
   270, 270,
-  270, 270,
-  270, 270,
-  270, 270,
-  270, 270,
-  270, 270
+  225, 315
 };
 
-// SYMMETRICAL: Right side pointing right (90°)
+// SYMMETRICAL: Right side - arrows pointing right (> shape)
 const t_digit digit_sym_right = {
+  45, 135,    // top: V pointing right >
+  90, 90,     // middle: both right
+  135, 45,    // bottom: V pointing right >
+  45, 135,
   90, 90,
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90
+  135, 45
 };
 
-// SYMMETRICAL: Converge to center - left digits point right
+// SYMMETRICAL: Converge to center - left digits point right (> shape)
 const t_digit digit_sym_converge_right = {
+  45, 135,
   90, 90,
+  135, 45,
+  45, 135,
   90, 90,
-  90, 90,
-  90, 90,
-  90, 90,
-  90, 90
+  135, 45
 };
 
-// SYMMETRICAL: Converge to center - right digits point left
+// SYMMETRICAL: Converge to center - right digits point left (< shape)
 const t_digit digit_sym_converge_left = {
+  315, 225,
   270, 270,
+  225, 315,
+  315, 225,
   270, 270,
-  270, 270,
-  270, 270,
-  270, 270,
-  270, 270
+  225, 315
 };
 
-// WIND: Wave pattern with progressive angles
-// Creates an S-curve effect across the display
+// WIND: Wave pattern with diagonal lines
+// h and m at opposite angles create visible diagonal lines
 const t_digit digit_wind_1 = {
-  95, 95,     // slightly tilted right
-  90, 90,     // horizontal
-  85, 85,     // slightly tilted left
-  100, 100,   // more tilted right
-  90, 90,
-  80, 80      // more tilted left
+  315, 135,   // top: diagonal \
+  270, 90,    // mid: horizontal -
+  225, 45,    // bot: diagonal /
+  315, 135,
+  270, 90,
+  225, 45
 };
 
 const t_digit digit_wind_2 = {
-  85, 85,
-  90, 90,
-  95, 95,
-  80, 80,
-  90, 90,
-  100, 100
+  225, 45,    // top: diagonal /
+  270, 90,    // mid: horizontal -
+  315, 135,   // bot: diagonal \
+  225, 45,
+  270, 90,
+  315, 135
 };
 
 const t_digit digit_wind_3 = {
-  100, 100,
-  95, 95,
-  90, 90,
-  95, 95,
-  85, 85,
-  85, 85
+  270, 90,    // all horizontal
+  315, 135,
+  270, 90,
+  270, 90,
+  225, 45,
+  270, 90
 };
 
 const t_digit digit_wind_4 = {
-  80, 80,
-  85, 85,
-  90, 90,
-  85, 85,
-  95, 95,
-  95, 95
+  270, 90,
+  225, 45,
+  270, 90,
+  270, 90,
+  315, 135,
+  270, 90
 };
 
 const t_full_clock d_wind_1 = {digit_wind_1, digit_wind_2, digit_wind_3, digit_wind_4};
@@ -285,44 +283,44 @@ const t_full_clock d_wind_3 = {digit_wind_3, digit_wind_4, digit_wind_1, digit_w
 // FIREWORK: Center explosion pattern
 // Hands point outward from center of display
 
-// Left outer columns (0,1) - point left/outward
+// Left outer columns (0,1) - arrows pointing left/outward
 const t_digit digit_firework_outer_left = {
-  315, 315,   // top: point top-left ↖
-  270, 270,   // middle: point left ←
-  225, 225,   // bottom: point bottom-left ↙
-  315, 315,
+  315, 225,   // top: V pointing left <
+  270, 270,   // middle: both left (center line)
+  225, 315,   // bottom: V pointing left <
+  315, 225,
   270, 270,
-  225, 225
+  225, 315
 };
 
-// Left inner columns (2,3) - point slightly left
+// Left inner columns (2,3) - mixed arrows (transition)
 const t_digit digit_firework_inner_left = {
-  315, 0,     // top: ↖ and ↑
-  270, 270,   // middle: ← ←
-  225, 180,   // bottom: ↙ and ↓
-  0, 45,
-  270, 90,
-  180, 135
+  315, 45,    // top: diagonal spread
+  270, 90,    // middle: horizontal line
+  225, 135,   // bottom: diagonal spread
+  0, 180,     // top: vertical line
+  270, 90,    // middle: horizontal line
+  180, 0      // bottom: vertical line
 };
 
-// Right inner columns (4,5) - point slightly right
+// Right inner columns (4,5) - mixed arrows (transition)
 const t_digit digit_firework_inner_right = {
-  0, 45,      // top: ↑ and ↗
-  270, 90,    // middle: ← →
-  180, 135,   // bottom: ↓ and ↘
-  315, 0,
-  270, 90,
-  225, 180
+  0, 180,     // top: vertical line
+  270, 90,    // middle: horizontal line
+  180, 0,     // bottom: vertical line
+  45, 315,    // top: diagonal spread
+  270, 90,    // middle: horizontal line
+  135, 225    // bottom: diagonal spread
 };
 
-// Right outer columns (6,7) - point right/outward
+// Right outer columns (6,7) - arrows pointing right/outward
 const t_digit digit_firework_outer_right = {
-  45, 45,     // top: point top-right ↗
-  90, 90,     // middle: point right →
-  135, 135,   // bottom: point bottom-right ↘
-  45, 45,
+  45, 135,    // top: V pointing right >
+  90, 90,     // middle: both right (center line)
+  135, 45,    // bottom: V pointing right >
+  45, 135,
   90, 90,
-  135, 135
+  135, 45
 };
 
 const t_full_clock d_firework = {digit_firework_outer_left, digit_firework_inner_left, digit_firework_inner_right, digit_firework_outer_right};
@@ -335,44 +333,44 @@ const t_full_clock d_firework = {digit_firework_outer_left, digit_firework_inner
 // All hands form parallel diagonal lines across display
 // ============================================
 
-// Obliques pointing bottom-right (135°)
+// Obliques: diagonal line \ (top-left to bottom-right)
 const t_digit digit_obliques_br = {
-  135, 135,
-  135, 135,
-  135, 135,
-  135, 135,
-  135, 135,
-  135, 135
+  315, 135,   // h points up-left, m points down-right = diagonal \
+  315, 135,
+  315, 135,
+  315, 135,
+  315, 135,
+  315, 135
 };
 
-// Obliques pointing bottom-left (225°)
+// Obliques: diagonal line / (top-right to bottom-left)
 const t_digit digit_obliques_bl = {
-  225, 225,
-  225, 225,
-  225, 225,
-  225, 225,
-  225, 225,
-  225, 225
+  225, 45,    // h points down-left, m points up-right = diagonal /
+  225, 45,
+  225, 45,
+  225, 45,
+  225, 45,
+  225, 45
 };
 
-// Obliques pointing top-right (45°)
+// Obliques: diagonal line / (same as bl, alternative name)
 const t_digit digit_obliques_tr = {
-  45, 45,
-  45, 45,
-  45, 45,
-  45, 45,
-  45, 45,
-  45, 45
+  45, 225,    // h points up-right, m points down-left = diagonal /
+  45, 225,
+  45, 225,
+  45, 225,
+  45, 225,
+  45, 225
 };
 
-// Obliques pointing top-left (315°)
+// Obliques: diagonal line \ (same as br, alternative name)
 const t_digit digit_obliques_tl = {
-  315, 315,
-  315, 315,
-  315, 315,
-  315, 315,
-  315, 315,
-  315, 315
+  135, 315,   // h points down-right, m points up-left = diagonal \
+  135, 315,
+  135, 315,
+  135, 315,
+  135, 315,
+  135, 315
 };
 
 const t_full_clock d_obliques_br = {digit_obliques_br, digit_obliques_br, digit_obliques_br, digit_obliques_br};
@@ -415,23 +413,23 @@ const t_digit digit_ripple_outer = {
   225, 135
 };
 
-// Ripple collapsed (all pointing to center-ish)
+// Ripple collapsed (arrows pointing to center)
 const t_digit digit_ripple_in_left = {
-  45, 45,
-  90, 90,
-  135, 135,
-  45, 45,
-  90, 90,
-  135, 135
+  45, 135,    // top: V pointing right >
+  270, 90,    // middle: horizontal line -
+  135, 45,    // bottom: V pointing right >
+  45, 135,
+  270, 90,
+  135, 45
 };
 
 const t_digit digit_ripple_in_right = {
-  315, 315,
-  270, 270,
-  225, 225,
-  315, 315,
-  270, 270,
-  225, 225
+  315, 225,   // top: V pointing left <
+  270, 90,    // middle: horizontal line -
+  225, 315,   // bottom: V pointing left <
+  315, 225,
+  270, 90,
+  225, 315
 };
 
 const t_full_clock d_ripple_out = {digit_ripple_outer, digit_ripple_mid, digit_ripple_center, digit_ripple_outer};
@@ -442,42 +440,42 @@ const t_full_clock d_ripple_in = {digit_ripple_in_left, digit_ripple_in_left, di
 // Organic breathing motion
 // ============================================
 
-// Breathe expanded - hands spread outward
+// Breathe expanded - hands spread outward (V shapes pointing out)
 const t_digit digit_breathe_expand_left = {
-  315, 315,   // top: pointing up-left
-  270, 270,   // middle: pointing left
-  225, 225,   // bottom: pointing down-left
-  315, 315,
+  315, 225,   // top: V pointing left <
+  270, 270,   // middle: both left (center line)
+  225, 315,   // bottom: V pointing left <
+  315, 225,
   270, 270,
-  225, 225
+  225, 315
 };
 
 const t_digit digit_breathe_expand_right = {
-  45, 45,     // top: pointing up-right
-  90, 90,     // middle: pointing right
-  135, 135,   // bottom: pointing down-right
-  45, 45,
+  45, 135,    // top: V pointing right >
+  90, 90,     // middle: both right (center line)
+  135, 45,    // bottom: V pointing right >
+  45, 135,
   90, 90,
-  135, 135
+  135, 45
 };
 
-// Breathe contracted - hands toward center
+// Breathe contracted - hands toward center (V shapes pointing in)
 const t_digit digit_breathe_contract_left = {
-  45, 45,     // pointing right
+  45, 135,    // V pointing right (toward center)
   90, 90,
-  135, 135,
-  45, 45,
+  135, 45,
+  45, 135,
   90, 90,
-  135, 135
+  135, 45
 };
 
 const t_digit digit_breathe_contract_right = {
-  315, 315,   // pointing left
+  315, 225,   // V pointing left (toward center)
   270, 270,
-  225, 225,
-  315, 315,
+  225, 315,
+  315, 225,
   270, 270,
-  225, 225
+  225, 315
 };
 
 // Breathe neutral - all horizontal
@@ -499,44 +497,44 @@ const t_full_clock d_breathe_neutral = {digit_breathe_neutral, digit_breathe_neu
 // Hands point down in staggered pattern
 // ============================================
 
-// Rain phase 1 - alternating down angles
+// Rain phase 1 - vertical lines (ready to fall)
 const t_digit digit_rain_1 = {
-  180, 180,   // straight down
-  200, 160,   // slightly angled
-  180, 180,
-  160, 200,
-  180, 180,
-  200, 160
+  0, 180,     // vertical line |
+  0, 180,
+  0, 180,
+  0, 180,
+  0, 180,
+  0, 180
 };
 
-// Rain phase 2 - shifted
+// Rain phase 2 - tilted (falling)
 const t_digit digit_rain_2 = {
-  160, 200,
-  180, 180,
-  200, 160,
-  180, 180,
-  160, 200,
-  180, 180
+  315, 135,   // diagonal \
+  315, 135,
+  315, 135,
+  315, 135,
+  315, 135,
+  315, 135
 };
 
-// Rain phase 3 - more shift
+// Rain phase 3 - horizontal (landed)
 const t_digit digit_rain_3 = {
-  200, 160,
-  160, 200,
-  180, 180,
-  200, 160,
-  180, 180,
-  160, 200
+  270, 90,    // horizontal -
+  270, 90,
+  270, 90,
+  270, 90,
+  270, 90,
+  270, 90
 };
 
-// Rain splash - hands spread at bottom
+// Rain splash - V shapes at bottom spreading out
 const t_digit digit_rain_splash = {
-  180, 180,
-  180, 180,
-  225, 135,   // bottom spreads out
-  180, 180,
-  180, 180,
-  225, 135
+  270, 90,    // top horizontal
+  270, 90,    // mid horizontal
+  225, 135,   // bottom V spread
+  270, 90,
+  270, 90,
+  315, 45     // bottom V spread (opposite)
 };
 
 const t_full_clock d_rain_1 = {digit_rain_1, digit_rain_2, digit_rain_3, digit_rain_1};
@@ -549,61 +547,61 @@ const t_full_clock d_rain_splash = {digit_rain_splash, digit_rain_splash, digit_
 // Center expands and contracts like a beating heart
 // ============================================
 
-// Heartbeat systole (contracted) - hands point inward to center
+// Heartbeat systole (contracted) - V shapes pointing toward center
 const t_digit digit_heart_systole_left = {
-  45, 45,     // all pointing toward center-right
-  90, 90,
-  135, 135,
-  45, 45,
-  90, 90,
-  135, 135
+  45, 135,    // top: V pointing right >
+  270, 90,    // middle: horizontal -
+  135, 45,    // bottom: V pointing right >
+  45, 135,
+  270, 90,
+  135, 45
 };
 
 const t_digit digit_heart_systole_right = {
-  315, 315,   // all pointing toward center-left
-  270, 270,
-  225, 225,
-  315, 315,
-  270, 270,
-  225, 225
+  315, 225,   // top: V pointing left <
+  270, 90,    // middle: horizontal -
+  225, 315,   // bottom: V pointing left <
+  315, 225,
+  270, 90,
+  225, 315
 };
 
-// Heartbeat diastole (expanded) - hands spread outward
+// Heartbeat diastole (expanded) - V shapes pointing away from center
 const t_digit digit_heart_diastole_left = {
-  315, 315,   // pointing away from center
-  270, 270,
-  225, 225,
-  315, 315,
-  270, 270,
-  225, 225
+  315, 225,   // top: V pointing left <
+  270, 90,    // middle: horizontal -
+  225, 315,   // bottom: V pointing left <
+  315, 225,
+  270, 90,
+  225, 315
 };
 
 const t_digit digit_heart_diastole_right = {
-  45, 45,     // pointing away from center
-  90, 90,
-  135, 135,
-  45, 45,
-  90, 90,
-  135, 135
+  45, 135,    // top: V pointing right >
+  270, 90,    // middle: horizontal -
+  135, 45,    // bottom: V pointing right >
+  45, 135,
+  270, 90,
+  135, 45
 };
 
-// Heartbeat peak - dramatic outward burst
+// Heartbeat peak - dramatic outward burst (bigger V shapes)
 const t_digit digit_heart_peak_left = {
-  300, 300,   // strong outward angles
-  270, 270,
-  240, 240,
-  300, 300,
-  270, 270,
-  240, 240
+  300, 240,   // top: wide V pointing left
+  270, 90,    // middle: horizontal
+  240, 300,   // bottom: wide V pointing left
+  300, 240,
+  270, 90,
+  240, 300
 };
 
 const t_digit digit_heart_peak_right = {
-  60, 60,
-  90, 90,
-  120, 120,
-  60, 60,
-  90, 90,
-  120, 120
+  60, 120,    // top: wide V pointing right
+  270, 90,    // middle: horizontal
+  120, 60,    // bottom: wide V pointing right
+  60, 120,
+  270, 90,
+  120, 60
 };
 
 const t_full_clock d_heart_systole = {digit_heart_systole_left, digit_heart_systole_left, digit_heart_systole_right, digit_heart_systole_right};

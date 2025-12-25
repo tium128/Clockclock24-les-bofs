@@ -303,84 +303,185 @@ void _delay(int value)
 
 void set_spinning()
 {
-  // Phase 1: All hands pointing up (0°)
-  set_speed(1500);
-  set_acceleration(800);
+  // Phase 1: All hands pointing up (0°) - progressive column by column
+  set_speed(600);
+  set_acceleration(300);
   set_direction(CLOCKWISE);
-  set_clock(d_spin_up);
-  _delay(3000);
 
-  // Phase 2: Rotate to down (180°) - clockwise
+  // Progressive reveal from left to right
+  t_full_clock target_up = d_spin_up;
+  for (int i = 0; i < 8; i++)
+  {
+    set_half_digit(i, target_up.digit[i/2].halfs[i%2]);
+    _delay(300);
+  }
+  _delay(2000);
+
+  // Phase 2: Rotate to down (180°) - all together with slower speed
+  set_speed(400);
   set_clock(d_spin_down);
-  _delay(3000);
+  _delay(5000);
 
-  // Phase 3: Rotate back to up (360°/0°) - clockwise
+  // Phase 3: Rotate back to up (360°/0°)
   set_clock(d_spin_up);
-  _delay(3000);
+  _delay(5000);
 
   // Final: Transition to time
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(400);
+  set_acceleration(150);
   set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 void set_squares()
 {
-  // Phase 1: Form diamond/square pattern
-  set_speed(1200);
-  set_acceleration(600);
-  set_direction(MIN_DISTANCE);
-  set_clock(d_squares);
-  _delay(4000);
+  set_speed(600);
+  set_acceleration(300);
+  set_direction(CLOCKWISE);
+
+  // Phase 1: Start with all horizontal (like WAVES)
+  set_clock(d_IIII);
+  _delay(3000);
+
+  // Phase 2: Progressive reveal of squares pattern from center outward
+  t_full_clock target = d_squares;
+
+  // Center columns first (3, 4)
+  set_half_digit(3, target.digit[1].halfs[1]);
+  set_half_digit(4, target.digit[2].halfs[0]);
+  _delay(1500);
+
+  // Next ring (2, 5)
+  set_half_digit(2, target.digit[1].halfs[0]);
+  set_half_digit(5, target.digit[2].halfs[1]);
+  _delay(1500);
+
+  // Outer ring (1, 6)
+  set_half_digit(1, target.digit[0].halfs[1]);
+  set_half_digit(6, target.digit[3].halfs[0]);
+  _delay(1500);
+
+  // Outermost (0, 7)
+  set_half_digit(0, target.digit[0].halfs[0]);
+  set_half_digit(7, target.digit[3].halfs[1]);
+  _delay(3000);
 
   // Final: Transition to time
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(400);
+  set_acceleration(150);
+  set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 void set_symmetrical()
 {
-  // Phase 1: Left half points left, right half points right
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(500);
+  set_acceleration(200);
   set_direction(MIN_DISTANCE);
 
-  // Create full clock state for phase 1: left→left, right→right
-  t_full_clock sym_phase1 = {digit_sym_left, digit_sym_left, digit_sym_right, digit_sym_right};
-  set_clock(sym_phase1);
+  // Phase 1: Start horizontal
+  set_clock(d_IIII);
   _delay(3000);
 
-  // Phase 2: Converge - left points right, right points left
-  t_full_clock sym_phase2 = {digit_sym_right, digit_sym_right, digit_sym_left, digit_sym_left};
-  set_clock(sym_phase2);
+  // Phase 2: Progressive diverge - outer columns first, then inner
+  // Left side points left, right side points right
+  t_full_clock sym_diverge = {digit_sym_left, digit_sym_left, digit_sym_right, digit_sym_right};
+
+  // Outer columns (0, 7)
+  set_half_digit(0, sym_diverge.digit[0].halfs[0]);
+  set_half_digit(7, sym_diverge.digit[3].halfs[1]);
+  _delay(1000);
+
+  // Next (1, 6)
+  set_half_digit(1, sym_diverge.digit[0].halfs[1]);
+  set_half_digit(6, sym_diverge.digit[3].halfs[0]);
+  _delay(1000);
+
+  // Next (2, 5)
+  set_half_digit(2, sym_diverge.digit[1].halfs[0]);
+  set_half_digit(5, sym_diverge.digit[2].halfs[1]);
+  _delay(1000);
+
+  // Center (3, 4)
+  set_half_digit(3, sym_diverge.digit[1].halfs[1]);
+  set_half_digit(4, sym_diverge.digit[2].halfs[0]);
+  _delay(3000);
+
+  // Phase 3: Converge - progressive from center outward
+  t_full_clock sym_converge = {digit_sym_right, digit_sym_right, digit_sym_left, digit_sym_left};
+
+  // Center first
+  set_half_digit(3, sym_converge.digit[1].halfs[1]);
+  set_half_digit(4, sym_converge.digit[2].halfs[0]);
+  _delay(1000);
+
+  set_half_digit(2, sym_converge.digit[1].halfs[0]);
+  set_half_digit(5, sym_converge.digit[2].halfs[1]);
+  _delay(1000);
+
+  set_half_digit(1, sym_converge.digit[0].halfs[1]);
+  set_half_digit(6, sym_converge.digit[3].halfs[0]);
+  _delay(1000);
+
+  set_half_digit(0, sym_converge.digit[0].halfs[0]);
+  set_half_digit(7, sym_converge.digit[3].halfs[1]);
   _delay(3000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_clock_time(last_hour, last_minute);
 }
 
 void set_wind()
 {
-  // Phase 1: First wave pattern
-  set_speed(800);
-  set_acceleration(400);
-  set_direction(MIN_DISTANCE);
-  set_clock(d_wind_1);
-  _delay(2500);
+  set_speed(600);
+  set_acceleration(250);
+  set_direction(CLOCKWISE);
 
-  // Phase 2: Shift wave
-  set_clock(d_wind_2);
-  _delay(2500);
+  // Phase 1: All horizontal
+  set_clock(d_IIII);
+  _delay(3000);
 
-  // Phase 3: Shift wave again
-  set_clock(d_wind_3);
-  _delay(2500);
+  // Phase 2: Progressive tilt from left to right (wind blowing)
+  // Wave effect - columns tilt progressively like grass in wind
+  for (int wave = 0; wave < 2; wave++)
+  {
+    // Wave passes through - tilt columns progressively
+    for (int col = 0; col < 8; col++)
+    {
+      // Tilt this column - diagonal lines pointing down-right
+      // h=225 (down-left), m=45 (up-right) creates a diagonal /
+      t_half_digitl tilted = {0};
+      for (int row = 0; row < 3; row++)
+      {
+        tilted.clocks[row].angle_h = 225;  // down-left
+        tilted.clocks[row].angle_m = 45;   // up-right
+      }
+      set_half_digit(col, tilted);
+      _delay(300);
+    }
+
+    // Return to horizontal progressively
+    _delay(1000);
+    for (int col = 0; col < 8; col++)
+    {
+      t_half_digitl horizontal = {0};
+      for (int row = 0; row < 3; row++)
+      {
+        horizontal.clocks[row].angle_h = 270;  // left
+        horizontal.clocks[row].angle_m = 90;   // right
+      }
+      set_half_digit(col, horizontal);
+      _delay(300);
+    }
+    _delay(1500);
+  }
 
   // Final: Transition to time
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(400);
+  set_acceleration(150);
+  set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
@@ -389,258 +490,383 @@ void set_cascade()
   // Get target time state
   t_full_clock target = get_clock_state_from_time(last_hour, last_minute);
 
-  set_speed(1200);
-  set_acceleration(600);
+  // Phase 1: Start with all vertical lines pointing up (waterfall source)
+  // h=0 (up), m=180 (down) = vertical line |
+  set_speed(600);
+  set_acceleration(300);
   set_direction(CLOCKWISE);
 
-  // Row 0 (top) - clocks 0, 3, 6, 9, 12, 15, 18, 21
-  // In half-digit terms: clock index 0 in each half-digit
+  t_half_digitl vertical_up = {0};
+  for (int row = 0; row < 3; row++)
+  {
+    vertical_up.clocks[row].angle_h = 0;    // up
+    vertical_up.clocks[row].angle_m = 180;  // down
+  }
+  for (int hd = 0; hd < 8; hd++)
+    set_half_digit(hd, vertical_up);
+  _delay(3000);
+
+  // Phase 2: Cascade down row by row - top row reveals first
   for (int hd = 0; hd < 8; hd++)
   {
     t_half_digitl row0_half = {0};
-    // Only set row 0 (index 0), keep others at current
     row0_half.clocks[0] = target.digit[hd/2].halfs[hd%2].clocks[0];
-    row0_half.clocks[1].angle_h = 270;
-    row0_half.clocks[1].angle_m = 270;
-    row0_half.clocks[2].angle_h = 270;
-    row0_half.clocks[2].angle_m = 270;
+    // Keep rows 1,2 as vertical lines
+    row0_half.clocks[1].angle_h = 0;
+    row0_half.clocks[1].angle_m = 180;
+    row0_half.clocks[2].angle_h = 0;
+    row0_half.clocks[2].angle_m = 180;
     set_half_digit(hd, row0_half);
   }
-  _delay(1500);
+  _delay(3000);
 
-  // Row 1 (middle) - clock index 1 in each half-digit
+  // Row 1 (middle) reveals
   for (int hd = 0; hd < 8; hd++)
   {
     t_half_digitl row1_half = {0};
     row1_half.clocks[0] = target.digit[hd/2].halfs[hd%2].clocks[0];
     row1_half.clocks[1] = target.digit[hd/2].halfs[hd%2].clocks[1];
-    row1_half.clocks[2].angle_h = 270;
-    row1_half.clocks[2].angle_m = 270;
+    // Keep row 2 as vertical line
+    row1_half.clocks[2].angle_h = 0;
+    row1_half.clocks[2].angle_m = 180;
     set_half_digit(hd, row1_half);
   }
-  _delay(1500);
+  _delay(3000);
 
-  // Row 2 (bottom) - complete the time display
+  // Row 2 (bottom) - complete the cascade
+  set_speed(400);
+  set_acceleration(150);
   set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 void set_firework()
 {
-  // Phase 1: All hands to center (neutral position)
-  set_speed(1000);
-  set_acceleration(500);
+  // Phase 1: All hands converge to center (build-up)
+  set_speed(500);
+  set_acceleration(200);
   set_direction(MIN_DISTANCE);
-  set_clock(d_stop);  // All at 270° (pointing left/hidden)
-  _delay(2000);
+  set_clock(d_stop);  // All at 270° (pointing down/6 o'clock)
+  _delay(4000);
 
-  // Phase 2: Explosion from center outward
-  set_speed(2000);
-  set_acceleration(1000);
+  // Phase 2: Explosion from center outward - progressive reveal
+  set_speed(800);
+  set_acceleration(400);
   set_direction(CLOCKWISE);
 
-  // Center columns first (half-digits 3,4)
+  // Center columns first (half-digits 3,4) - the spark
   set_half_digit(3, digit_firework_inner_left.halfs[1]);
   set_half_digit(4, digit_firework_inner_right.halfs[0]);
-  _delay(400);
+  _delay(1500);
 
-  // Next ring (half-digits 2 and 5)
+  // Next ring (half-digits 2 and 5) - explosion expands
   set_half_digit(2, digit_firework_inner_left.halfs[0]);
   set_half_digit(5, digit_firework_inner_right.halfs[1]);
-  _delay(400);
+  _delay(1500);
 
   // Outer ring (half-digits 1 and 6)
   set_half_digit(1, digit_firework_outer_left.halfs[1]);
   set_half_digit(6, digit_firework_outer_right.halfs[0]);
-  _delay(400);
+  _delay(1500);
 
-  // Outermost (half-digits 0 and 7)
+  // Outermost (half-digits 0 and 7) - full explosion
   set_half_digit(0, digit_firework_outer_left.halfs[0]);
   set_half_digit(7, digit_firework_outer_right.halfs[1]);
+  _delay(3000);
+
+  // Phase 3: Fade - return to neutral before time
+  set_speed(400);
+  set_acceleration(150);
+  set_direction(MIN_DISTANCE);
+  set_clock(d_IIII);  // Horizontal lines
   _delay(2000);
 
   // Final: Transition to time
-  set_speed(1000);
-  set_acceleration(500);
-  set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 // ============================================
-// OBLIQUES - Diagonal lines rotation
+// OBLIQUES - Diagonal lines rotation (progressive wave)
 // ============================================
 void set_obliques()
 {
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(600);
+  set_acceleration(300);
   set_direction(CLOCKWISE);
 
-  // Phase 1: Bottom-right diagonals
-  set_clock(d_obliques_br);
-  _delay(2500);
+  // Phase 1: Start horizontal
+  set_clock(d_IIII);
+  _delay(3000);
 
-  // Phase 2: Bottom-left diagonals
-  set_clock(d_obliques_bl);
-  _delay(2500);
+  // Phase 2: Progressive diagonal rotation - wave from left to right
+  // Each column rotates to diagonal progressively
+  t_full_clock target_br = d_obliques_br;
+  for (int col = 0; col < 8; col++)
+  {
+    set_half_digit(col, target_br.digit[col/2].halfs[col%2]);
+    _delay(400);
+  }
+  _delay(2000);
 
-  // Phase 3: Top-right diagonals
+  // Phase 3: Rotate all together to next diagonal
   set_clock(d_obliques_tr);
-  _delay(2500);
+  _delay(4000);
 
-  // Phase 4: Top-left diagonals
-  set_clock(d_obliques_tl);
-  _delay(2500);
+  // Phase 4: Progressive return - wave from right to left
+  t_full_clock target_tl = d_obliques_tl;
+  for (int col = 7; col >= 0; col--)
+  {
+    set_half_digit(col, target_tl.digit[col/2].halfs[col%2]);
+    _delay(400);
+  }
+  _delay(2000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 // ============================================
-// RIPPLE - Concentric rings from center
+// RIPPLE - Concentric rings from center (progressive)
 // ============================================
 void set_ripple()
 {
-  set_speed(1200);
-  set_acceleration(600);
+  set_speed(600);
+  set_acceleration(300);
   set_direction(MIN_DISTANCE);
 
-  // Phase 1: Ripple outward
-  set_clock(d_ripple_out);
+  // Phase 1: Start at center, hands hidden
+  set_clock(d_stop);
   _delay(3000);
 
-  // Phase 2: Ripple inward
-  set_clock(d_ripple_in);
-  _delay(3000);
+  // Phase 2: Ripple expands from center outward - progressive
+  t_full_clock ripple_out = d_ripple_out;
 
-  // Phase 3: Ripple outward again
-  set_clock(d_ripple_out);
-  _delay(3000);
+  // Center first (columns 3, 4)
+  set_half_digit(3, ripple_out.digit[1].halfs[1]);
+  set_half_digit(4, ripple_out.digit[2].halfs[0]);
+  _delay(1500);
+
+  // Next ring (columns 2, 5)
+  set_half_digit(2, ripple_out.digit[1].halfs[0]);
+  set_half_digit(5, ripple_out.digit[2].halfs[1]);
+  _delay(1500);
+
+  // Next ring (columns 1, 6)
+  set_half_digit(1, ripple_out.digit[0].halfs[1]);
+  set_half_digit(6, ripple_out.digit[3].halfs[0]);
+  _delay(1500);
+
+  // Outer ring (columns 0, 7)
+  set_half_digit(0, ripple_out.digit[0].halfs[0]);
+  set_half_digit(7, ripple_out.digit[3].halfs[1]);
+  _delay(2000);
+
+  // Phase 3: Ripple contracts inward - progressive
+  t_full_clock ripple_in = d_ripple_in;
+
+  // Outer first
+  set_half_digit(0, ripple_in.digit[0].halfs[0]);
+  set_half_digit(7, ripple_in.digit[3].halfs[1]);
+  _delay(1200);
+
+  set_half_digit(1, ripple_in.digit[0].halfs[1]);
+  set_half_digit(6, ripple_in.digit[3].halfs[0]);
+  _delay(1200);
+
+  set_half_digit(2, ripple_in.digit[1].halfs[0]);
+  set_half_digit(5, ripple_in.digit[2].halfs[1]);
+  _delay(1200);
+
+  set_half_digit(3, ripple_in.digit[1].halfs[1]);
+  set_half_digit(4, ripple_in.digit[2].halfs[0]);
+  _delay(2000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_clock_time(last_hour, last_minute);
 }
 
 // ============================================
-// BREATHE - Organic expansion/contraction
+// BREATHE - Organic expansion/contraction (progressive)
 // ============================================
 void set_breathe()
 {
-  set_speed(800);
-  set_acceleration(400);
+  set_speed(500);
+  set_acceleration(200);
   set_direction(MIN_DISTANCE);
 
-  // Phase 1: Expand
-  set_clock(d_breathe_expand);
-  _delay(2500);
-
-  // Phase 2: Contract
-  set_clock(d_breathe_contract);
-  _delay(2500);
-
-  // Phase 3: Neutral
+  // Phase 1: Start neutral (horizontal)
   set_clock(d_breathe_neutral);
-  _delay(2000);
+  _delay(3000);
 
-  // Phase 4: Expand again
-  set_clock(d_breathe_expand);
+  // Phase 2: Inhale - progressive expansion from center outward
+  t_full_clock expand = d_breathe_expand;
+
+  // Center expands first
+  set_half_digit(3, expand.digit[1].halfs[1]);
+  set_half_digit(4, expand.digit[2].halfs[0]);
+  _delay(800);
+
+  set_half_digit(2, expand.digit[1].halfs[0]);
+  set_half_digit(5, expand.digit[2].halfs[1]);
+  _delay(800);
+
+  set_half_digit(1, expand.digit[0].halfs[1]);
+  set_half_digit(6, expand.digit[3].halfs[0]);
+  _delay(800);
+
+  set_half_digit(0, expand.digit[0].halfs[0]);
+  set_half_digit(7, expand.digit[3].halfs[1]);
   _delay(2500);
 
-  // Phase 5: Contract
-  set_clock(d_breathe_contract);
+  // Phase 3: Exhale - progressive contraction from outer inward
+  t_full_clock contract = d_breathe_contract;
+
+  set_half_digit(0, contract.digit[0].halfs[0]);
+  set_half_digit(7, contract.digit[3].halfs[1]);
+  _delay(800);
+
+  set_half_digit(1, contract.digit[0].halfs[1]);
+  set_half_digit(6, contract.digit[3].halfs[0]);
+  _delay(800);
+
+  set_half_digit(2, contract.digit[1].halfs[0]);
+  set_half_digit(5, contract.digit[2].halfs[1]);
+  _delay(800);
+
+  set_half_digit(3, contract.digit[1].halfs[1]);
+  set_half_digit(4, contract.digit[2].halfs[0]);
   _delay(2500);
+
+  // Phase 4: Return to neutral
+  set_clock(d_breathe_neutral);
+  _delay(3000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_clock_time(last_hour, last_minute);
 }
 
 // ============================================
-// RAIN - Vertical falling pattern
+// RAIN - Vertical falling pattern (row-by-row)
 // ============================================
 void set_rain()
 {
-  set_speed(1500);
-  set_acceleration(800);
+  set_speed(700);
+  set_acceleration(350);
   set_direction(CLOCKWISE);
 
-  // Phase 1: Rain drops falling
-  set_clock(d_rain_1);
-  _delay(1500);
+  // Phase 1: All vertical lines pointing up (clouds/source)
+  // h=0 (up), m=180 (down) = vertical line |
+  t_half_digitl vertical = {0};
+  for (int row = 0; row < 3; row++)
+  {
+    vertical.clocks[row].angle_h = 0;    // up
+    vertical.clocks[row].angle_m = 180;  // down
+  }
+  for (int hd = 0; hd < 8; hd++)
+    set_half_digit(hd, vertical);
+  _delay(3000);
 
-  // Phase 2: Drops continue
-  set_clock(d_rain_2);
-  _delay(1500);
+  // Phase 2: Rain falls - row by row from top to bottom
+  // First row falls (top) - becomes horizontal
+  for (int hd = 0; hd < 8; hd++)
+  {
+    t_half_digitl drop = {0};
+    drop.clocks[0].angle_h = 270;  // Top row horizontal (left)
+    drop.clocks[0].angle_m = 90;   // (right)
+    drop.clocks[1].angle_h = 0;    // Middle still vertical
+    drop.clocks[1].angle_m = 180;
+    drop.clocks[2].angle_h = 0;    // Bottom still vertical
+    drop.clocks[2].angle_m = 180;
+    set_half_digit(hd, drop);
+  }
+  _delay(2500);
 
-  // Phase 3: Almost at bottom
-  set_clock(d_rain_3);
-  _delay(1500);
+  // Second row falls (middle)
+  for (int hd = 0; hd < 8; hd++)
+  {
+    t_half_digitl drop = {0};
+    drop.clocks[0].angle_h = 270;
+    drop.clocks[0].angle_m = 90;
+    drop.clocks[1].angle_h = 270;  // Middle row now horizontal
+    drop.clocks[1].angle_m = 90;
+    drop.clocks[2].angle_h = 0;    // Bottom still vertical
+    drop.clocks[2].angle_m = 180;
+    set_half_digit(hd, drop);
+  }
+  _delay(2500);
 
-  // Phase 4: Splash
-  set_clock(d_rain_splash);
+  // Third row falls (bottom) - all horizontal = splash
+  set_clock(d_IIII);
+  _delay(3000);
+
+  // Phase 3: Reset to vertical and repeat
+  for (int hd = 0; hd < 8; hd++)
+    set_half_digit(hd, vertical);
   _delay(2000);
 
-  // Repeat cycle
-  set_clock(d_rain_1);
-  _delay(1500);
-
-  set_clock(d_rain_2);
-  _delay(1500);
+  // Quick falling - all at once to horizontal
+  set_speed(800);
+  set_clock(d_IIII);
+  _delay(3000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
 
 // ============================================
-// HEARTBEAT - Pulsing heart rhythm
+// HEARTBEAT - Pulsing heart rhythm (realistic timing)
 // ============================================
 void set_heartbeat()
 {
-  set_speed(1800);
-  set_acceleration(900);
+  set_speed(600);
+  set_acceleration(300);
   set_direction(MIN_DISTANCE);
 
-  // Beat 1: Systole (contraction)
+  // Phase 1: Start with neutral/relaxed state
+  set_clock(d_breathe_neutral);  // Horizontal = resting
+  _delay(3000);
+
+  // Beat 1: Systole (contraction) - hands move inward
   set_clock(d_heart_systole);
-  _delay(300);
+  _delay(2500);
+
+  // Diastole (relaxation) - hands move outward
+  set_clock(d_heart_diastole);
+  _delay(3000);
+
+  // Beat 2: Systole (contraction)
+  set_clock(d_heart_systole);
+  _delay(2500);
 
   // Diastole (relaxation)
   set_clock(d_heart_diastole);
-  _delay(600);
+  _delay(3000);
 
-  // Peak
-  set_clock(d_heart_peak);
-  _delay(200);
-
-  // Back to diastole
-  set_clock(d_heart_diastole);
-  _delay(800);
-
-  // Beat 2: Systole
+  // Beat 3: Systole (contraction)
   set_clock(d_heart_systole);
-  _delay(300);
+  _delay(2500);
 
-  // Diastole
+  // Final relaxation
   set_clock(d_heart_diastole);
-  _delay(600);
+  _delay(2000);
 
-  // Peak
-  set_clock(d_heart_peak);
-  _delay(200);
-
-  // Diastole
-  set_clock(d_heart_diastole);
-  _delay(800);
-
-  // Beat 3: Systole
-  set_clock(d_heart_systole);
-  _delay(300);
-
-  // Diastole
-  set_clock(d_heart_diastole);
-  _delay(1000);
+  // Return to neutral before time
+  set_clock(d_breathe_neutral);
+  _delay(2000);
 
   // Final: Transition to time
+  set_speed(400);
+  set_acceleration(150);
   set_clock_time(last_hour, last_minute);
 }
 
@@ -648,48 +874,38 @@ void set_heartbeat()
 // DANCE MODE - Random shapes chained before time
 // ============================================
 
-// Available shape patterns for DANCE mode
+// Available shape patterns for DANCE mode (only visually distinct patterns)
 const t_full_clock* dance_shapes[] = {
   &d_spin_up,
   &d_spin_down,
   &d_squares,
   &d_IIII,
   &d_fun,
-  &d_wind_1,
-  &d_wind_2,
-  &d_wind_3,
   &d_firework,
-  // New organic/geometric patterns
   &d_obliques_br,
-  &d_obliques_bl,
-  &d_obliques_tr,
   &d_obliques_tl,
   &d_ripple_out,
-  &d_ripple_in,
   &d_breathe_expand,
   &d_breathe_contract,
-  &d_breathe_neutral,
-  &d_rain_1,
-  &d_rain_2,
-  &d_rain_3,
-  &d_rain_splash,
-  &d_heart_systole,
-  &d_heart_diastole,
-  &d_heart_peak
+  &d_stop
 };
-const int NUM_DANCE_SHAPES = 26;
+const int NUM_DANCE_SHAPES = 12;
 
 void set_dance()
 {
   // Seed random with analog noise + time for better randomness
   randomSeed(analogRead(0) + millis());
 
-  // Pick 2 to 4 shapes randomly
-  int num_shapes = random(2, 5); // 2, 3, or 4 shapes
+  // Pick 3 to 5 shapes randomly
+  int num_shapes = random(3, 6);
 
-  set_speed(1200);
-  set_acceleration(600);
-  set_direction(MIN_DISTANCE);
+  set_speed(600);
+  set_acceleration(300);
+  set_direction(CLOCKWISE);
+
+  // Start from a known state
+  set_clock(d_IIII);
+  _delay(3000);
 
   // Chain the random shapes
   int last_shape = -1;
@@ -705,14 +921,13 @@ void set_dance()
     // Apply the shape
     set_clock(*dance_shapes[shape_idx]);
 
-    // Variable delay between shapes (2-4 seconds)
-    int delay_time = random(2000, 4000);
-    _delay(delay_time);
+    // Fixed delay between shapes (4 seconds for motor completion)
+    _delay(4000);
   }
 
   // Final: Transition to time display
-  set_speed(1000);
-  set_acceleration(500);
+  set_speed(400);
+  set_acceleration(150);
   set_direction(MIN_DISTANCE);
   set_clock_time(last_hour, last_minute);
 }
