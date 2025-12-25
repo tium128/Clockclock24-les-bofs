@@ -55,6 +55,8 @@ void setup()
     spin_lock[i] = spin_lock_init(spin_num); //Initialise a spin lock
   }
 
+  Wire.setSDA(WIRE_SDA);
+  Wire.setSCL(WIRE_SCL);
   Wire.begin(get_i2c_address());
   Wire.onReceive(receiveEvent);
 }

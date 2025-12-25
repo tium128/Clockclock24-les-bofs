@@ -57,7 +57,7 @@ void setup() {
   // Load configuration from EEPROM
   begin_config();
 
-  Wire.begin(9, 8);
+  Wire.begin(9, 8, 100000);
   pixels.begin();            // Initialise la LED
   pixels.setBrightness(10);  // Réduit l’intensité globale (0–255)
   pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // Rouge

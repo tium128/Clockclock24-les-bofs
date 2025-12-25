@@ -10,7 +10,7 @@ ClockAccelStepper _motors[6] = {
   ClockAccelStepper(ClockAccelStepper::DRIVER, A_STEP, A_DIR)  // 5 -> m clock 2
 };
 
-uint8_t _i2c_address = 0x02;
+uint8_t _i2c_address;
 
 static int sanitize_angle(int angle)
 {
@@ -25,23 +25,31 @@ void board_begin()
   digitalWrite(RESET, HIGH);
 
   // Init motors
+  const bool invert_map[6] = {
+    INVERT_F_DIR, // 0 -> F_DIR (h clock 0)
+    INVERT_E_DIR, // 1 -> E_DIR (m clock 0)
+    INVERT_D_DIR, // 2 -> D_DIR (h clock 1)
+    INVERT_C_DIR, // 3 -> C_DIR (m clock 1)
+    INVERT_B_DIR, // 4 -> B_DIR (h clock 2)
+    INVERT_A_DIR  // 5 -> A_DIR (m clock 2)
+  };
+
   for(int i = 0; i < 6; i++)
   {
-    if(i % 2 == 1)
-      _motors[i].setReverse(true);
+    _motors[i].setPinsInverted(invert_map[i],  false, false);
     _motors[i].setMaxMotorSteps(STEPS);
     _motors[i].setHandAngle(INIT_HANDS_ANGLE);
     _motors[i].setMinPulseWidth(0);
   }
 
-  //pinMode(ADDR_1, INPUT_PULLUP);
-  //pinMode(ADDR_2, INPUT_PULLUP);
-  //pinMode(ADDR_3, INPUT_PULLUP);
-  //pinMode(ADDR_4, INPUT_PULLUP);
-  //_i2c_address = !digitalRead(ADDR_1) + 
-  //             (!digitalRead(ADDR_2) << 1) + 
-  //             (!digitalRead(ADDR_3) << 2) + 
-  //             (!digitalRead(ADDR_4) << 3);
+  pinMode(ADDR_1, INPUT_PULLUP);
+  pinMode(ADDR_2, INPUT_PULLUP);
+  pinMode(ADDR_3, INPUT_PULLUP);
+  pinMode(ADDR_4, INPUT_PULLUP);
+  _i2c_address = !digitalRead(ADDR_1) + 
+               (!digitalRead(ADDR_2) << 1) + 
+               (!digitalRead(ADDR_3) << 2) + 
+               (!digitalRead(ADDR_4) << 3);
 }
 
 void board_loop()
