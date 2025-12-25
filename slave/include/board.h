@@ -51,4 +51,22 @@ void adjust_h_hand(int index, signed char amount);
 */
 void adjust_m_hand(int index, signed char amount);
 
+/**
+ * Enable or disable stepper drivers (TMC_ENN pin)
+ * @param enabled   true = drivers enabled (LOW), false = request disable (deferred until motors stop)
+*/
+void set_drivers_enabled(bool enabled);
+
+/**
+ * Check if all motors have stopped
+ * @return true if all motors have distanceToGo() == 0
+*/
+bool all_motors_stopped();
+
+/**
+ * Process pending driver disable (call in loop)
+ * Disables drivers only when all motors have stopped
+*/
+void process_pending_disable();
+
 #endif

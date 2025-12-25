@@ -116,6 +116,12 @@ void set_time()
     stop();
   else if(hour() != last_hour || minute() != last_minute)
   {
+    // Re-enable drivers if coming from stopped state
+    if(is_stopped)
+    {
+      set_all_drivers_enabled(true);
+      delay(500); // Wait for all drivers to be fully enabled before sending positions
+    }
     is_stopped = false;
     last_hour = hour();
     last_minute = minute();
@@ -179,6 +185,8 @@ void stop()
     set_speed(200);
     set_acceleration(100);
     set_clock(d_stop);
+    // Request drivers disable (will happen when motors reach position)
+    set_all_drivers_enabled(false);
   }
 }
 

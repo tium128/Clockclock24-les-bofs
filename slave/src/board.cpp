@@ -1,5 +1,9 @@
 #include "board.h"
 
+// Driver enable state
+static bool _pending_disable = false;
+static bool _drivers_enabled = true;
+
 // Define a stepper and the pins it will use
 ClockAccelStepper _motors[6] = {
   ClockAccelStepper(ClockAccelStepper::DRIVER, F_STEP, F_DIR), // 0 -> h clock 0
@@ -23,6 +27,12 @@ void board_begin()
   // Reset motor controllers
   pinMode(RESET, OUTPUT);
   digitalWrite(RESET, HIGH);
+
+  // Enable drivers at boot (TMC_ENN is active LOW)
+  pinMode(TMC_ENN, OUTPUT);
+  digitalWrite(TMC_ENN, LOW);
+  _drivers_enabled = true;
+  _pending_disable = false;
 
   // Init motors
   const bool invert_map[6] = {
@@ -56,6 +66,9 @@ void board_loop()
 {
   for(int i = 0; i < 6; i++)
     _motors[i].run();
+
+  // Check if we need to disable drivers after motors stop
+  process_pending_disable();
 }
 
 uint8_t get_i2c_address()
@@ -97,4 +110,43 @@ void adjust_m_hand(int index, signed char amount)
   int steps = amount * STEPS / 360;
   _motors[index*2].move(-steps);
   _motors[index*2].runToPosition();
+}
+
+bool all_motors_stopped()
+{
+  for(int i = 0; i < 6; i++)
+  {
+    if(_motors[i].distanceToGo() != 0)
+      return false;
+  }
+  return true;
+}
+
+void set_drivers_enabled(bool enabled)
+{
+  if(enabled)
+  {
+    // Enable immediately
+    digitalWrite(TMC_ENN, LOW);
+    _drivers_enabled = true;
+    _pending_disable = false;
+    Serial.println("Drivers enabled");
+  }
+  else
+  {
+    // Request disable (will be processed when motors stop)
+    _pending_disable = true;
+    Serial.println("Drivers disable requested");
+  }
+}
+
+void process_pending_disable()
+{
+  if(_pending_disable && _drivers_enabled && all_motors_stopped())
+  {
+    digitalWrite(TMC_ENN, HIGH);
+    _drivers_enabled = false;
+    _pending_disable = false;
+    Serial.println("Drivers disabled");
+  }
 }

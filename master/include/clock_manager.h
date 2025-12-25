@@ -107,11 +107,17 @@ void set_clock_time(int h, int m);
 */
 t_full_clock get_clock_state_from_time(int h, int m);
 
-/** 
+/**
  * @param clock_index   single clock index (0 <= index < 24)
  * @param h_amount      hours hand degree of adjustment
  * @param m_amount      minutes hand degree of adjustment
 */
 void adjust_hands(int clock_index, int h_amount, int m_amount);
+
+/**
+ * Send enable/disable command to all slave boards
+ * @param enabled   true = enable drivers, false = disable drivers (deferred)
+*/
+void set_all_drivers_enabled(bool enabled);
 
 #endif

@@ -13,12 +13,34 @@ spin_lock_t *spin_lock[3]; //The spinlock object that will be associated with sp
 t_half_digit target_clocks_state;
 t_half_digit current_clocks_state;
 
+// I2C command definitions
+#define CMD_DRIVERS_DISABLE 0x00
+#define CMD_DRIVERS_ENABLE  0x01
+
 // I2C runs on main core (core 0)
 void receiveEvent(int how_many)
 {
   Serial.println("Received I2C message");
   Serial.printf("Size: %d bytes\n", how_many);
-  
+
+  // 1 byte command: enable/disable drivers
+  if (how_many == 1)
+  {
+    uint8_t cmd = Wire.read();
+    if (cmd == CMD_DRIVERS_ENABLE)
+    {
+      Serial.println("I2C cmd: Enable drivers");
+      set_drivers_enabled(true);
+    }
+    else if (cmd == CMD_DRIVERS_DISABLE)
+    {
+      Serial.println("I2C cmd: Disable drivers");
+      set_drivers_enabled(false);
+    }
+    return;
+  }
+
+  // Standard clock position command
   if (how_many >= sizeof(half_digit))
   {
     t_half_digit tmp_state;
@@ -26,13 +48,13 @@ void receiveEvent(int how_many)
 
     for (uint8_t i = 0; i < 3; i++)
     {
-      Serial.printf("Clock %d - Mode H: %d, Mode M: %d, Angle H: %d, Angle M: %d\n", 
-        i, 
+      Serial.printf("Clock %d - Mode H: %d, Mode M: %d, Angle H: %d, Angle M: %d\n",
+        i,
         tmp_state.clocks[i].mode_h,
         tmp_state.clocks[i].mode_m,
         tmp_state.clocks[i].angle_h,
         tmp_state.clocks[i].angle_m);
-        
+
       spin_lock_unsafe_blocking(spin_lock[i]);
       target_clocks_state.clocks[i] = tmp_state.clocks[i];
       target_clocks_state.change_counter[i] = tmp_state.change_counter[i];

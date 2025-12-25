@@ -141,3 +141,21 @@ void adjust_hands(int clock_index, int h_amount, int m_amount)
   send_half_digit(clock_index/3, tmp);
   _counter++;
 }
+
+// I2C command definitions (must match slave)
+#define CMD_DRIVERS_DISABLE 0x00
+#define CMD_DRIVERS_ENABLE  0x01
+
+void set_all_drivers_enabled(bool enabled)
+{
+  uint8_t cmd = enabled ? CMD_DRIVERS_ENABLE : CMD_DRIVERS_DISABLE;
+  Serial.printf("Sending drivers %s command to all boards\n", enabled ? "enable" : "disable");
+
+  // Send to all 8 slave boards (addresses 1-8)
+  for (int i = 0; i < 8; i++)
+  {
+    Wire.beginTransmission(i + 1);
+    Wire.write(cmd);
+    Wire.endTransmission();
+  }
+}
