@@ -452,18 +452,16 @@ void handle_api_motor_test()
 
 void handle_api_drivers_enable()
 {
-  Serial.println("API: Enable drivers");
-  set_all_drivers_enabled(true);
+  Serial.println("API: Enable drivers (no-op, drivers always enabled)");
   _drivers_enabled = true;
-  _server.send(200, "application/json", "{\"success\":true,\"message\":\"All drivers enabled\"}");
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers always enabled at boot\"}");
 }
 
 void handle_api_drivers_disable()
 {
-  Serial.println("API: Disable drivers");
-  set_all_drivers_enabled(false);
+  Serial.println("API: Disable drivers (no-op, drivers always enabled)");
   _drivers_enabled = false;
-  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers disable requested (will disable when motors stop)\"}");
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Driver control disabled (always enabled)\"}");
 }
 
 void handle_api_stop()
@@ -487,6 +485,11 @@ void test_single_motor(int board, int clock_idx, int hand, int direction)
 {
   t_half_digit hd = {0};
 
+  // Get current position of target hand
+  int current_angle = _motor_positions[board-1][clock_idx][hand];
+  // Calculate target: 180° away from current position
+  int target_angle = (current_angle + 180) % 360;
+
   // Set all clocks to current position (no move)
   for(int i = 0; i < 3; i++) {
     hd.clocks[i].angle_h = _motor_positions[board-1][i][0];
@@ -500,12 +503,15 @@ void test_single_motor(int board, int clock_idx, int hand, int direction)
     hd.change_counter[i] = _test_counter;
   }
 
-  // Set target motor to rotate 360 degrees
+  // Set target motor to move 180° in the specified direction
   if(hand == 0) {
+    hd.clocks[clock_idx].angle_h = target_angle;
     hd.clocks[clock_idx].mode_h = direction;
-    // Position stays same but direction mode makes it do full rotation
+    _motor_positions[board-1][clock_idx][0] = target_angle;
   } else {
+    hd.clocks[clock_idx].angle_m = target_angle;
     hd.clocks[clock_idx].mode_m = direction;
+    _motor_positions[board-1][clock_idx][1] = target_angle;
   }
 
   hd.change_counter[clock_idx] = ++_test_counter;
@@ -515,5 +521,6 @@ void test_single_motor(int board, int clock_idx, int hand, int direction)
   I2C_writeAnything(hd);
   Wire.endTransmission();
 
-  Serial.printf("Test motor: board=%d, clock=%d, hand=%d, dir=%d\n", board, clock_idx, hand, direction);
+  Serial.printf("Test motor: board=%d, clock=%d, hand=%d, dir=%d, angle=%d->%d\n",
+    board, clock_idx, hand, direction, current_angle, target_angle);
 }
