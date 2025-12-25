@@ -22,13 +22,13 @@
 #define TMC_ENN 12 // Enable pin for all drivers (low active)
 
 // Inversion des DIR (0 = normal, 1 = inversé)
-// Mettre =1 pour les DIR dont tu veux inverser la logique
-#define INVERT_A_DIR 0
-#define INVERT_B_DIR 0
-#define INVERT_C_DIR 0
-#define INVERT_D_DIR 0
-#define INVERT_E_DIR 0
-#define INVERT_F_DIR 0
+// Tous inversés suite aux tests du 2025-12-25
+#define INVERT_A_DIR 1
+#define INVERT_B_DIR 1
+#define INVERT_C_DIR 1
+#define INVERT_D_DIR 1
+#define INVERT_E_DIR 1
+#define INVERT_F_DIR 1
 
 
 // I2C address

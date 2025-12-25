@@ -452,16 +452,18 @@ void handle_api_motor_test()
 
 void handle_api_drivers_enable()
 {
-  Serial.println("API: Enable drivers (no-op, drivers always enabled)");
+  Serial.println("API: Enable drivers");
+  set_all_drivers_enabled(true);
   _drivers_enabled = true;
-  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers always enabled at boot\"}");
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers enabled\"}");
 }
 
 void handle_api_drivers_disable()
 {
-  Serial.println("API: Disable drivers (no-op, drivers always enabled)");
+  Serial.println("API: Disable drivers");
+  set_all_drivers_enabled(false);
   _drivers_enabled = false;
-  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Driver control disabled (always enabled)\"}");
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers disabled\"}");
 }
 
 void handle_api_stop()
