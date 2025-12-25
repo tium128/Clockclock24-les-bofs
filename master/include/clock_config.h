@@ -12,15 +12,28 @@ enum wireless_modes
   EXT_CONN
 };
 
-/** 
+/**
  * Clock animation's modes
+ * See docs/CHOREOGRAPHIES.md for detailed descriptions
  */
 enum clock_modes
 {
-  LAZY,
-  FUN,
-  WAVES,
-  OFF
+  LAZY,        // Direct transition, shortest path
+  FUN,         // Clockwise rotation to time
+  WAVES,       // Horizontal lines then cascade
+  SPINNING,    // 360° sync rotation then time
+  SQUARES,     // Diamond pattern then time
+  SYMMETRICAL, // Mirror effect left/right
+  WIND,        // Organic wave movement
+  CASCADE,     // Top-to-bottom waterfall
+  FIREWORK,    // Center explosion outward
+  OBLIQUES,    // Diagonal lines rotation
+  RIPPLE,      // Concentric rings from center
+  BREATHE,     // Organic expansion/contraction
+  RAIN,        // Vertical falling pattern
+  HEARTBEAT,   // Pulsing heart rhythm
+  DANCE,       // Random 2-4 shapes chained, then time
+  OFF          // All hands to 6:00, drivers disabled
 };
 
 /**
