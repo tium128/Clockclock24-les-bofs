@@ -5,10 +5,11 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #1a1a2e;
-    color: #eee;
+    font-family: Tahoma, Helvetica, sans-serif;
+    background: #212121;
+    color: #fff;
     min-height: 100vh;
+    user-select: none;
 }
 
 .container {
@@ -23,12 +24,13 @@ header {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #444;
 }
 
 header h1 {
-    font-size: 1.5rem;
-    color: #4ecdc4;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
 }
 
 .project-controls {
@@ -39,31 +41,36 @@ header h1 {
 
 .project-controls input[type="text"] {
     padding: 8px 12px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #2a2a4a;
+    border: none;
+    background: transparent;
     color: #fff;
     width: 200px;
+    box-shadow: inset 0 0 2px #dfdfdf;
+}
+
+.project-controls input[type="text"]:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px #dfdfdf;
 }
 
 button {
     padding: 8px 16px;
     border: none;
-    border-radius: 4px;
-    background: #4ecdc4;
-    color: #1a1a2e;
+    background: transparent;
+    color: #fff;
     cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    font-size: 14px;
+    box-shadow: inset 0 0 2px #dfdfdf;
+    transition: background 0.2s;
 }
 
 button:hover {
-    background: #45b7aa;
-    transform: translateY(-1px);
+    background: #b4b4b44b;
 }
 
 button:active {
-    transform: translateY(0);
+    background: #dfdfdf;
+    color: #000;
 }
 
 .main-content {
@@ -75,28 +82,30 @@ button:active {
 
 /* Timeline Section */
 .timeline-section {
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 15px;
     margin-bottom: 20px;
     grid-column: 1 / -1;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .timeline-section h2 {
     margin-bottom: 10px;
-    font-size: 1rem;
-    color: #888;
+    font-size: 16px;
+    font-weight: 700;
+    color: #8a8a8a;
 }
 
 .timeline-controls {
     margin-bottom: 10px;
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .timeline-controls button {
     padding: 6px 12px;
-    font-size: 0.9rem;
+    font-size: 13px;
 }
 
 .timeline {
@@ -109,8 +118,7 @@ button:active {
 .keyframe-thumb {
     min-width: 100px;
     height: 60px;
-    background: #3a3a5a;
-    border-radius: 6px;
+    background: #333;
     cursor: pointer;
     display: flex;
     flex-direction: column;
@@ -118,24 +126,26 @@ button:active {
     justify-content: center;
     border: 2px solid transparent;
     transition: all 0.2s;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .keyframe-thumb:hover {
-    background: #4a4a6a;
+    background: #3a3a3a;
 }
 
 .keyframe-thumb.active {
-    border-color: #4ecdc4;
-    background: #3a4a5a;
+    border-color: #dfdfdf;
+    background: #3a3a3a;
+    box-shadow: inset 0 0 0 2px #dfdfdf;
 }
 
 .keyframe-thumb span {
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 12px;
+    color: #8a8a8a;
 }
 
 .keyframe-thumb strong {
-    font-size: 1.1rem;
+    font-size: 14px;
 }
 
 /* Drag handle */
@@ -145,14 +155,14 @@ button:active {
     top: 50%;
     transform: translateY(-50%);
     color: #666;
-    font-size: 0.8rem;
+    font-size: 12px;
     cursor: grab;
     padding: 4px;
     user-select: none;
 }
 
 .kf-drag-handle:hover {
-    color: #4ecdc4;
+    color: #dfdfdf;
 }
 
 .keyframe-thumb {
@@ -167,12 +177,12 @@ button:active {
 }
 
 .keyframe-thumb.drag-over-left {
-    border-left: 3px solid #4ecdc4;
+    border-left: 3px solid #dfdfdf;
     margin-left: -3px;
 }
 
 .keyframe-thumb.drag-over-right {
-    border-right: 3px solid #4ecdc4;
+    border-right: 3px solid #dfdfdf;
     margin-right: -3px;
 }
 
@@ -184,29 +194,30 @@ button:active {
 
 /* Timeline hint */
 .timeline-hint {
-    font-size: 0.75rem;
+    font-size: 11px;
     color: #666;
     margin: 5px 0;
 }
 
-/* Loop controls */
+/* Loop controls - keep purple accent for loops */
 .loop-btn {
-    background: #9b59b6 !important;
+    background: #7c5cad !important;
     color: #fff !important;
+    box-shadow: none !important;
 }
 
 .loop-btn:hover {
-    background: #8e44ad !important;
+    background: #9370c9 !important;
 }
 
 .loop-btn-clear {
-    background: #555 !important;
-    color: #aaa !important;
-    font-size: 0.8rem !important;
+    background: #444 !important;
+    color: #8a8a8a !important;
+    font-size: 12px !important;
 }
 
 .loop-btn-clear:hover {
-    background: #666 !important;
+    background: #555 !important;
     color: #fff !important;
 }
 
@@ -214,28 +225,26 @@ button:active {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.85rem;
-    color: #9b59b6;
+    font-size: 13px;
+    color: #9370c9;
 }
 
 .loop-count-label input {
     width: 45px;
     padding: 4px;
-    border: 1px solid #9b59b6;
-    border-radius: 3px;
-    background: #2a2a4a;
+    border: 1px solid #7c5cad;
+    background: #2a2a2a;
     color: #fff;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 13px;
 }
 
 .loop-info {
-    font-size: 0.8rem;
-    color: #9b59b6;
+    font-size: 12px;
+    color: #9370c9;
     margin-left: 10px;
     padding: 4px 8px;
-    background: rgba(155, 89, 182, 0.2);
-    border-radius: 4px;
+    background: rgba(124, 92, 173, 0.2);
 }
 
 /* Loop markers in timeline */
@@ -256,32 +265,32 @@ button:active {
 .loop-bracket {
     font-size: 2rem;
     font-weight: bold;
-    color: #9b59b6;
+    color: #9370c9;
     line-height: 1;
 }
 
 .loop-start .loop-bracket {
-    color: #27ae60;
+    color: #2e7d32;
 }
 
 .loop-end .loop-bracket {
-    color: #e74c3c;
+    color: #c60a0a;
 }
 
 .loop-count {
-    font-size: 0.7rem;
-    color: #9b59b6;
+    font-size: 11px;
+    color: #9370c9;
     margin-top: -5px;
 }
 
 /* Keyframes inside loop */
 .keyframe-thumb.in-loop {
-    background: rgba(155, 89, 182, 0.2);
-    border-bottom: 2px solid #9b59b6;
+    background: rgba(124, 92, 173, 0.15);
+    border-bottom: 2px solid #7c5cad;
 }
 
 .keyframe-thumb.in-loop.active {
-    background: rgba(155, 89, 182, 0.3);
+    background: rgba(124, 92, 173, 0.25);
 }
 
 /* Motion Parameters */
@@ -290,10 +299,10 @@ button:active {
     flex-wrap: wrap;
     gap: 15px;
     align-items: center;
-    background: #1a1a2e;
-    border-radius: 6px;
+    background: #1a1a1a;
     padding: 12px 15px;
     margin-bottom: 15px;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .param-group {
@@ -303,8 +312,8 @@ button:active {
 }
 
 .param-group label {
-    font-size: 0.85rem;
-    color: #888;
+    font-size: 13px;
+    color: #8a8a8a;
     white-space: nowrap;
 }
 
@@ -312,11 +321,10 @@ button:active {
 .param-group select {
     width: 80px;
     padding: 6px 8px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #2a2a4a;
+    border: 1px solid #555;
+    background: #2a2a2a;
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 13px;
     text-align: center;
 }
 
@@ -327,12 +335,12 @@ button:active {
 
 .param-group input[type="number"]:focus,
 .param-group select:focus {
-    border-color: #4ecdc4;
+    border-color: #dfdfdf;
     outline: none;
 }
 
 .param-unit {
-    font-size: 0.75rem;
+    font-size: 11px;
     color: #666;
 }
 
@@ -345,14 +353,15 @@ button:active {
 
 /* Matrix Section */
 .matrix-section {
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 20px;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .matrix-section h2 {
     margin-bottom: 15px;
-    font-size: 1.2rem;
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .matrix-header {
@@ -363,8 +372,8 @@ button:active {
     display: grid;
     grid-template-columns: 60px repeat(8, 1fr);
     gap: 8px;
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 12px;
+    color: #8a8a8a;
     text-align: center;
 }
 
@@ -378,13 +387,12 @@ button:active {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 12px;
+    color: #8a8a8a;
 }
 
 .clock-cell {
-    background: #1a1a2e;
-    border-radius: 8px;
+    background: #1a1a1a;
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -393,15 +401,17 @@ button:active {
     border: 2px solid transparent;
     transition: all 0.2s;
     cursor: pointer;
+    box-shadow: inset 0 0 1px #444;
 }
 
 .clock-cell:hover {
-    background: #252545;
+    background: #252525;
 }
 
 .clock-cell.selected {
-    border-color: #4ecdc4;
-    background: #2a3a4a;
+    border-color: #dfdfdf;
+    background: #2a2a2a;
+    box-shadow: inset 0 0 0 2px #dfdfdf;
 }
 
 .clock-face {
@@ -434,10 +444,11 @@ button:active {
     border-radius: 2px;
 }
 
+/* Keep distinct colors for hour/minute hands for readability */
 .hand-h {
     width: 3px;
     height: 18px;
-    background: #e74c3c;
+    background: #c60a0a;
     margin-left: -1.5px;
 }
 
@@ -462,8 +473,8 @@ button:active {
 }
 
 .input-group label {
-    font-size: 0.65rem;
-    color: #888;
+    font-size: 10px;
+    color: #8a8a8a;
     text-align: center;
 }
 
@@ -471,26 +482,25 @@ button:active {
     width: 100%;
     padding: 4px;
     border: 1px solid #444;
-    border-radius: 3px;
-    background: #2a2a4a;
+    background: #2a2a2a;
     color: #fff;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 12px;
 }
 
 .input-group select {
     width: 100%;
     padding: 4px;
     border: 1px solid #444;
-    border-radius: 3px;
-    background: #2a2a4a;
+    background: #2a2a2a;
     color: #fff;
     text-align: center;
-    font-size: 0.7rem;
+    font-size: 11px;
 }
 
+/* Keep distinct border colors for hour/minute inputs */
 .input-h input, .input-h select {
-    border-color: #e74c3c;
+    border-color: #c60a0a;
 }
 
 .input-m input, .input-m select {
@@ -505,8 +515,8 @@ button:active {
 .comment-section label {
     display: block;
     margin-bottom: 8px;
-    color: #888;
-    font-size: 0.9rem;
+    color: #8a8a8a;
+    font-size: 13px;
 }
 
 .comment-section textarea {
@@ -514,25 +524,30 @@ button:active {
     height: 80px;
     padding: 10px;
     border: 1px solid #444;
-    border-radius: 4px;
-    background: #1a1a2e;
+    background: #1a1a1a;
     color: #fff;
     resize: vertical;
     font-family: inherit;
 }
 
+.comment-section textarea:focus {
+    border-color: #dfdfdf;
+    outline: none;
+}
+
 /* Quick Actions */
 .quick-actions {
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 15px;
     height: fit-content;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .quick-actions h3 {
     margin-bottom: 15px;
-    font-size: 1rem;
-    color: #4ecdc4;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
 }
 
 .action-group {
@@ -540,8 +555,8 @@ button:active {
 }
 
 .action-group h4 {
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 12px;
+    color: #8a8a8a;
     margin-bottom: 8px;
 }
 
@@ -550,27 +565,29 @@ button:active {
     width: 100%;
     margin-bottom: 5px;
     padding: 6px 10px;
-    font-size: 0.85rem;
-    background: #3a3a5a;
+    font-size: 13px;
+    background: #333;
     color: #fff;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .action-group button:hover {
-    background: #4a4a6a;
+    background: #3a3a3a;
 }
 
 /* Preview Section */
 .preview-section {
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 20px;
     margin-bottom: 20px;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .preview-section h2 {
     margin-bottom: 15px;
-    font-size: 1rem;
-    color: #888;
+    font-size: 16px;
+    font-weight: 700;
+    color: #8a8a8a;
 }
 
 .preview-controls {
@@ -589,38 +606,37 @@ button:active {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.9rem;
-    color: #888;
+    font-size: 13px;
+    color: #8a8a8a;
 }
 
 .preview-controls input[type="number"] {
     width: 80px;
     padding: 6px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #1a1a2e;
+    border: 1px solid #555;
+    background: #1a1a1a;
     color: #fff;
     text-align: center;
 }
 
 #previewCanvas {
-    background: #1a1a2e;
-    border-radius: 8px;
+    background: #1a1a1a;
     width: 100%;
     max-width: 800px;
 }
 
 /* Code Section */
 .code-section {
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 20px;
+    box-shadow: inset 0 0 1px #555;
 }
 
 .code-section h2 {
     margin-bottom: 15px;
-    font-size: 1rem;
-    color: #888;
+    font-size: 16px;
+    font-weight: 700;
+    color: #8a8a8a;
 }
 
 .code-section button {
@@ -629,15 +645,15 @@ button:active {
 }
 
 #codeOutput {
-    background: #1a1a2e;
-    border-radius: 4px;
+    background: #1a1a1a;
     padding: 15px;
     overflow-x: auto;
     font-family: 'Monaco', 'Menlo', monospace;
-    font-size: 0.85rem;
+    font-size: 13px;
     line-height: 1.5;
     max-height: 400px;
     overflow-y: auto;
+    box-shadow: inset 0 0 1px #555;
 }
 
 /* Scrollbar Styling */
@@ -647,17 +663,15 @@ button:active {
 }
 
 ::-webkit-scrollbar-track {
-    background: #1a1a2e;
-    border-radius: 4px;
+    background: #1a1a1a;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4a4a6a;
-    border-radius: 4px;
+    background: #444;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #5a5a7a;
+    background: #555;
 }
 
 /* Sliders */
@@ -666,8 +680,7 @@ button:active {
     appearance: none;
     width: 100%;
     height: 6px;
-    border-radius: 3px;
-    background: #1a1a2e;
+    background: #1a1a1a;
     outline: none;
     margin: 4px 0;
     cursor: pointer;
@@ -695,12 +708,13 @@ button:active {
     border: none;
 }
 
+/* Keep distinct colors for hour/minute sliders */
 .slider-h::-webkit-slider-thumb {
-    background: #e74c3c;
+    background: #c60a0a;
 }
 
 .slider-h::-moz-range-thumb {
-    background: #e74c3c;
+    background: #c60a0a;
 }
 
 .slider-m::-webkit-slider-thumb {
@@ -713,13 +727,12 @@ button:active {
 
 .slider::-webkit-slider-runnable-track {
     height: 6px;
-    border-radius: 3px;
 }
 
 .angle-value {
     font-weight: 600;
     color: #fff;
-    font-size: 0.7rem;
+    font-size: 11px;
 }
 
 /* Notifications */
@@ -728,8 +741,7 @@ button:active {
     top: 20px;
     right: 20px;
     padding: 12px 20px;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    font-size: 13px;
     font-weight: 500;
     z-index: 1000;
     animation: slideIn 0.3s ease;
@@ -737,22 +749,22 @@ button:active {
 }
 
 .notification-success {
-    background: #27ae60;
+    background: #2e7d32;
     color: #fff;
 }
 
 .notification-warning {
-    background: #f39c12;
-    color: #1a1a2e;
+    background: #f57c00;
+    color: #fff;
 }
 
 .notification-info {
-    background: #3498db;
+    background: #1976d2;
     color: #fff;
 }
 
 .notification-error {
-    background: #e74c3c;
+    background: #c60a0a;
     color: #fff;
 }
 
@@ -785,25 +797,23 @@ button:active {
     position: fixed;
     bottom: 20px;
     left: 20px;
-    background: #2a2a4a;
-    border-radius: 8px;
+    background: #2a2a2a;
     padding: 15px;
-    font-size: 0.75rem;
-    color: #888;
+    font-size: 11px;
+    color: #8a8a8a;
     max-width: 250px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 0 1px #555;
 }
 
 .shortcuts-help h4 {
-    color: #4ecdc4;
+    color: #fff;
     margin-bottom: 8px;
-    font-size: 0.85rem;
+    font-size: 13px;
 }
 
 .shortcuts-help kbd {
-    background: #1a1a2e;
+    background: #1a1a1a;
     padding: 2px 6px;
-    border-radius: 3px;
     font-family: monospace;
     color: #fff;
 }

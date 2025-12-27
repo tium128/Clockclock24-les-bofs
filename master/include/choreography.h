@@ -113,6 +113,10 @@ bool choreo_is_enabled(const char* name);
 // Trigger choreography on hour change (call from main loop when hour changes)
 void choreo_on_hour_change();
 
+// Check and trigger choreography based on frequency setting (call from main loop)
+// This handles both hourly (at hour change) and 2/min (every 30s) modes
+void choreo_check_frequency_trigger(int currentSecond);
+
 // Get total choreography count
 int choreo_get_count();
 

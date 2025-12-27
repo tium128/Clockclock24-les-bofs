@@ -145,15 +145,19 @@ bool choreo_load(const char* name) {
         keyframe->cascadeDelayMs = kf["cascadeDelayMs"] | 100;
 
         // Clocks data: clocks[slave][clock]
-        // Clock convention: 0° = 12h, 90° = 3h, 180° = 6h, 270° = 9h
-        // No conversion needed - Designer and Firmware use same convention
+        // Designer uses clock convention: 0° = 12h, 90° = 3h, 180° = 6h, 270° = 9h
+        // Firmware uses trigonometric convention: 0° = 3h, 90° = 12h, 180° = 9h, 270° = 6h
+        // Conversion: trigoAngle = (450 - clockAngle) % 360
         JsonArray clocks = kf["clocks"].as<JsonArray>();
         for (int slave = 0; slave < 8 && slave < (int)clocks.size(); slave++) {
             JsonArray slaveClocks = clocks[slave].as<JsonArray>();
             for (int clock = 0; clock < 3 && clock < (int)slaveClocks.size(); clock++) {
                 JsonObject c = slaveClocks[clock].as<JsonObject>();
-                keyframe->clocks[slave][clock].angleH = c["angleH"] | 180;
-                keyframe->clocks[slave][clock].angleM = c["angleM"] | 180;
+                int angleH = c["angleH"] | 180;
+                int angleM = c["angleM"] | 180;
+                // Convert from clock convention to trigonometric convention
+                keyframe->clocks[slave][clock].angleH = (450 - angleH) % 360;
+                keyframe->clocks[slave][clock].angleM = (450 - angleM) % 360;
                 keyframe->clocks[slave][clock].dirH = (strcmp(c["dirH"] | "CW", "CCW") == 0) ? 1 : 0;
                 keyframe->clocks[slave][clock].dirM = (strcmp(c["dirM"] | "CW", "CCW") == 0) ? 1 : 0;
             }

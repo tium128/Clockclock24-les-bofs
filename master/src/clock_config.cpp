@@ -15,6 +15,7 @@ char _password[64];
 // Choreography settings
 int _choreo_mode;
 uint16_t _choreo_enabled_mask;
+int _choreo_frequency;
 
 void begin_config()
 {
@@ -32,6 +33,7 @@ void begin_config()
   // Choreography settings
   _choreo_mode = prefs.getInt("choreo_mode", 0);  // Default: OFF
   _choreo_enabled_mask = prefs.getUShort("choreo_mask", 0xFFFF);  // Default: all enabled
+  _choreo_frequency = prefs.getInt("choreo_freq", 0);  // Default: hourly
 }
 
 void end_config()
@@ -49,6 +51,7 @@ void clear_config()
   memset(_sleep_time, 0, sizeof(_sleep_time));
   _choreo_mode = 0;
   _choreo_enabled_mask = 0xFFFF;
+  _choreo_frequency = 0;
 }
 
 int get_clock_mode()
@@ -141,4 +144,15 @@ void set_choreo_enabled_mask(uint16_t value)
 {
   _choreo_enabled_mask = value;
   prefs.putUShort("choreo_mask", value);
+}
+
+int get_choreo_frequency()
+{
+  return _choreo_frequency;
+}
+
+void set_choreo_frequency(int value)
+{
+  _choreo_frequency = value;
+  prefs.putInt("choreo_freq", value);
 }

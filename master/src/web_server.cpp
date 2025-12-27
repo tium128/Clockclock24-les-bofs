@@ -9,6 +9,8 @@ void handle_api_choreo_mode_get();
 void handle_api_choreo_mode_set();
 void handle_api_choreo_enable();
 void handle_api_choreo_list_full();
+void handle_api_choreo_frequency_get();
+void handle_api_choreo_frequency_set();
 
 WebServer _server(80);
 
@@ -73,6 +75,8 @@ void server_start()
   _server.on("/api/choreo/mode", HTTP_POST, handle_api_choreo_mode_set);
   _server.on("/api/choreo/enable", HTTP_POST, handle_api_choreo_enable);
   _server.on("/api/choreo/listfull", HTTP_GET, handle_api_choreo_list_full);
+  _server.on("/api/choreo/frequency", HTTP_GET, handle_api_choreo_frequency_get);
+  _server.on("/api/choreo/frequency", HTTP_POST, handle_api_choreo_frequency_set);
   Serial.println("WebServer setup done");
 }
 
@@ -94,7 +98,7 @@ void handle_get()
 
 void handle_get_config()
 {
-  Serial.println("Handle GET /config");\
+  Serial.println("Handle GET /config");
   char payload[1024];
   {
     char s_time[512] = "[";
@@ -721,51 +725,50 @@ const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ClockClock24 - Choreographies</title>
+  <title>ClockClock 24 - Choreographies</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh;padding:15px}
-    .container{max-width:1000px;margin:0 auto}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:1px solid #333;flex-wrap:wrap;gap:10px}
-    header h1{font-size:1.5rem;color:#4ecdc4}
-    .btn-back{background:#3a3a5a;color:#fff;text-decoration:none;padding:8px 16px;border-radius:4px;font-size:0.9rem}
-    .btn-back:hover{background:#4a4a6a}
-    button{padding:8px 16px;border:none;border-radius:4px;background:#4ecdc4;color:#1a1a2e;cursor:pointer;font-weight:500;font-size:0.9rem;transition:all 0.2s}
-    button:hover{background:#45b7aa}
-    button.danger{background:#e74c3c;color:#fff}
-    button.danger:hover{background:#c0392b}
-    button.secondary{background:#3a3a5a;color:#fff}
-    button.secondary:hover{background:#4a4a6a}
-    .section{background:#2a2a4a;border-radius:8px;padding:20px;margin-bottom:20px}
-    .section h2{font-size:1.1rem;color:#888;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #3a3a5a}
-    .mode-selector{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
-    .mode-btn{padding:12px 20px;border:2px solid #3a3a5a;border-radius:6px;background:#1a1a2e;color:#888;cursor:pointer;transition:all 0.2s;font-size:0.9rem}
-    .mode-btn:hover{border-color:#4ecdc4;color:#fff}
-    .mode-btn.active{border-color:#4ecdc4;background:#4ecdc4;color:#1a1a2e;font-weight:600}
-    .mode-desc{font-size:0.85rem;color:#666;margin-top:10px;padding:10px;background:#1a1a2e;border-radius:4px}
-    .choreo-list{margin-top:15px}
-    .choreo-item{display:flex;align-items:center;gap:12px;padding:12px;background:#1a1a2e;border-radius:6px;margin-bottom:8px;border:1px solid #3a3a5a}
-    .choreo-item:hover{border-color:#4a4a6a}
-    .choreo-item input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:#4ecdc4}
-    .choreo-name{flex:1;font-size:0.95rem}
-    .choreo-actions{display:flex;gap:8px}
-    .choreo-actions button{padding:6px 12px;font-size:0.8rem}
-    .upload-zone{border:2px dashed #3a3a5a;border-radius:8px;padding:30px;text-align:center;cursor:pointer;transition:all 0.2s}
-    .upload-zone:hover{border-color:#4ecdc4;background:#252545}
+    body{font-family:Tahoma,Helvetica,sans-serif;background:#212121;color:#fff;min-height:100vh;padding:20px;user-select:none}
+    .container{max-width:800px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:10px}
+    header h1{font-size:1.4rem;font-weight:400}
+    .btn-back{color:#8a8a8a;text-decoration:none;font-size:14px;padding:8px 16px;box-shadow:inset 0 0 2px #dfdfdf}
+    .btn-back:hover{background:#b4b4b44b}
+    button{padding:8px 16px;border:none;background:transparent;color:#fff;cursor:pointer;font-size:14px;box-shadow:inset 0 0 2px #dfdfdf;transition:background 0.2s}
+    button:hover{background:#b4b4b44b}
+    button.active{background:#dfdfdf;color:#000;box-shadow:inset 0 0 0 2px #dfdfdf}
+    button.danger{box-shadow:inset 0 0 2px #c60a0a;color:#ff6b6b}
+    button.danger:hover{background:#c60a0a33}
+    .section{margin-bottom:24px}
+    .section h2{font-size:16px;font-weight:700;margin-bottom:12px;text-align:center}
+    .mode-selector{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+    .mode-btn{padding:10px 18px;box-shadow:inset 0 0 2px #dfdfdf;background:transparent;color:#fff;cursor:pointer;font-size:14px;border:none}
+    .mode-btn:hover{background:#b4b4b44b}
+    .mode-btn.active{background:#dfdfdf;color:#000;box-shadow:inset 0 0 0 2px #dfdfdf}
+    .mode-desc{font-size:12px;color:#8a8a8a;text-align:center;margin-top:8px}
+    .choreo-list{margin-top:12px}
+    .choreo-item{display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:6px;box-shadow:inset 0 0 1px #555}
+    .choreo-item:hover{background:#2a2a2a}
+    .choreo-item input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:#dfdfdf}
+    .choreo-name{flex:1;font-size:14px}
+    .choreo-actions{display:flex;gap:6px}
+    .choreo-actions button{padding:6px 12px;font-size:12px}
+    .upload-zone{border:2px dashed #555;padding:30px;text-align:center;cursor:pointer;transition:all 0.2s}
+    .upload-zone:hover{border-color:#8a8a8a;background:#2a2a2a}
     .upload-zone input{display:none}
-    .player-section{display:flex;align-items:center;gap:15px;flex-wrap:wrap;padding:15px;background:#1a1a2e;border-radius:6px;margin-top:15px}
-    .player-btn{padding:10px 20px;font-size:1rem}
-    .player-status{display:flex;flex-direction:column;gap:4px}
-    .status-badge{padding:4px 10px;border-radius:4px;font-size:0.8rem;font-weight:500}
-    .status-badge.stopped{background:#666}
-    .status-badge.playing{background:#27ae60}
-    .status-badge.paused{background:#f39c12}
-    .status-name{font-size:0.85rem;color:#888}
-    .empty-msg{text-align:center;padding:30px;color:#666;font-style:italic}
-    .tabs{display:flex;gap:5px;margin-bottom:20px}
-    .tab{padding:10px 20px;background:#2a2a4a;border:none;border-radius:6px 6px 0 0;color:#888;cursor:pointer;font-size:0.9rem}
-    .tab:hover{color:#fff}
-    .tab.active{background:#3a3a5a;color:#4ecdc4;font-weight:500}
+    .player-section{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px;justify-content:center;box-shadow:inset 0 0 1px #555}
+    .player-btn{padding:10px 20px;font-size:14px}
+    .player-status{display:flex;flex-direction:column;gap:4px;align-items:center;min-width:100px}
+    .status-badge{padding:4px 12px;font-size:12px;font-weight:500;box-shadow:inset 0 0 2px #555}
+    .status-badge.stopped{color:#8a8a8a}
+    .status-badge.playing{background:#2e7d32;color:#fff;box-shadow:none}
+    .status-badge.paused{background:#f57c00;color:#fff;box-shadow:none}
+    .status-name{font-size:12px;color:#8a8a8a}
+    .empty-msg{text-align:center;padding:24px;color:#666;font-style:italic;font-size:13px}
+    .tabs{display:flex;gap:4px;margin-bottom:20px;justify-content:center}
+    .tab{padding:10px 20px;background:transparent;border:none;color:#8a8a8a;cursor:pointer;font-size:14px;box-shadow:inset 0 0 2px #555}
+    .tab:hover{color:#fff;background:#b4b4b44b}
+    .tab.active{background:#dfdfdf;color:#000;box-shadow:inset 0 0 0 2px #dfdfdf}
     .tab-content{display:none}
     .tab-content.active{display:block}
   </style>
@@ -792,6 +795,15 @@ const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
           <button class="mode-btn" data-mode="random" onclick="setMode('random')">Aleatoire</button>
         </div>
         <div class="mode-desc" id="modeDesc">Selectionnez un mode pour voir sa description.</div>
+      </div>
+
+      <div class="section" id="frequencySection" style="display:none;">
+        <h2>Frequence (modes Auto/Aleatoire)</h2>
+        <div class="mode-selector">
+          <button class="mode-btn" data-freq="0" onclick="setFrequency(0)">Horaire</button>
+          <button class="mode-btn" data-freq="1" onclick="setFrequency(1)">2/min</button>
+        </div>
+        <div class="mode-desc" id="freqDesc">Horaire: la choreographie se joue a chaque changement d'heure.</div>
       </div>
 
       <div class="section">
@@ -834,13 +846,19 @@ const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
 
 <script>
 let currentMode='off';
+let currentFrequency=0;
 let choreographies=[];
 
 const modeDescriptions={
   off:'Desactive: Les choreographies ne se declenchent pas automatiquement.',
   manual:'Manuel: Declenchez les choreographies manuellement via les boutons de lecture.',
-  auto:'Auto: La premiere choreographie activee se joue a chaque changement d\'heure.',
-  random:'Aleatoire: Une choreographie au hasard parmi celles activees se joue a chaque changement d\'heure.'
+  auto:'Auto: La premiere choreographie activee se joue selon la frequence choisie.',
+  random:'Aleatoire: Une choreographie au hasard parmi celles activees se joue selon la frequence choisie.'
+};
+
+const freqDescriptions={
+  0:'Horaire: la choreographie se joue a chaque changement d\'heure.',
+  1:'2/min: la choreographie se joue toutes les 30 secondes (2 fois par minute).'
 };
 
 document.addEventListener('DOMContentLoaded',()=>{loadData();updateStatus();});
@@ -857,17 +875,29 @@ async function loadData(){
     const res=await fetch('/api/choreo/listfull');
     const data=await res.json();
     currentMode=data.mode||'off';
+    currentFrequency=data.frequency||0;
     choreographies=data.choreographies||[];
     renderMode();
+    renderFrequency();
     renderList();
   }catch(e){console.error('Load error:',e);}
 }
 
 function renderMode(){
-  document.querySelectorAll('.mode-btn').forEach(btn=>{
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.mode===currentMode);
   });
   document.getElementById('modeDesc').textContent=modeDescriptions[currentMode]||'';
+  // Show frequency section only for auto/random modes
+  const freqSection=document.getElementById('frequencySection');
+  freqSection.style.display=(currentMode==='auto'||currentMode==='random')?'block':'none';
+}
+
+function renderFrequency(){
+  document.querySelectorAll('.mode-btn[data-freq]').forEach(btn=>{
+    btn.classList.toggle('active',parseInt(btn.dataset.freq)===currentFrequency);
+  });
+  document.getElementById('freqDesc').textContent=freqDescriptions[currentFrequency]||'';
 }
 
 function renderList(){
@@ -896,6 +926,14 @@ async function setMode(mode){
     await fetch('/api/choreo/mode',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'mode='+mode});
     currentMode=mode;
     renderMode();
+  }catch(e){alert('Erreur: '+e);}
+}
+
+async function setFrequency(freq){
+  try{
+    await fetch('/api/choreo/frequency',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'frequency='+freq});
+    currentFrequency=freq;
+    renderFrequency();
   }catch(e){alert('Erreur: '+e);}
 }
 
@@ -1161,7 +1199,33 @@ void handle_api_choreo_list_full() {
     case CHOREO_MODE_RANDOM: json += "random"; break;
     default: json += "off"; break;
   }
-  json += "\",\"count\":" + String(count) + "}";
+  json += "\",\"frequency\":" + String(get_choreo_frequency());
+  json += ",\"count\":" + String(count) + "}";
 
   _server.send(200, "application/json", json);
+}
+
+void handle_api_choreo_frequency_get() {
+  int freq = get_choreo_frequency();
+  String json = "{\"frequency\":" + String(freq) + "}";
+  _server.send(200, "application/json", json);
+}
+
+void handle_api_choreo_frequency_set() {
+  Serial.println("API: Set choreography frequency");
+
+  if (!_server.hasArg("frequency")) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Missing frequency\"}");
+    return;
+  }
+
+  int freq = _server.arg("frequency").toInt();
+  if (freq < 0 || freq > 1) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid frequency (0=hourly, 1=2/min)\"}");
+    return;
+  }
+
+  set_choreo_frequency(freq);
+  Serial.printf("Choreography frequency set to: %d\n", freq);
+  _server.send(200, "application/json", "{\"success\":true}");
 }

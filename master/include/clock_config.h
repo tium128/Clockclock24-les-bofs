@@ -14,25 +14,14 @@ enum wireless_modes
 
 /**
  * Clock animation's modes
- * See docs/CHOREOGRAPHIES.md for detailed descriptions
  */
 enum clock_modes
 {
   LAZY,        // Direct transition, shortest path
   FUN,         // Clockwise rotation to time
   WAVES,       // Horizontal lines then cascade
-  SPINNING,    // 360° sync rotation then time
-  SQUARES,     // Diamond pattern then time
-  SYMMETRICAL, // Mirror effect left/right
-  WIND,        // Organic wave movement
-  CASCADE,     // Top-to-bottom waterfall
-  FIREWORK,    // Center explosion outward
-  OBLIQUES,    // Diagonal lines rotation
-  RIPPLE,      // Concentric rings from center
-  BREATHE,     // Organic expansion/contraction
-  RAIN,        // Vertical falling pattern
-  HEARTBEAT,   // Pulsing heart rhythm
-  DANCE,       // Random 2-4 shapes chained, then time
+  CUSTOM,      // Choreography mode - uses /choreography settings
+  ADJUST,      // Hands at 6:00, drivers ON for calibration
   OFF          // All hands to 6:00, drivers disabled
 };
 
@@ -149,5 +138,16 @@ uint16_t get_choreo_enabled_mask();
  * @param value   bitmask where bit N = choreography N enabled
  */
 void set_choreo_enabled_mask(uint16_t value);
+
+/**
+ * Gets choreography frequency (0=hourly, 1=2/min)
+ */
+int get_choreo_frequency();
+
+/**
+ * Sets choreography frequency
+ * @param value   0=hourly, 1=2/min (every 30s)
+ */
+void set_choreo_frequency(int value);
 
 #endif
