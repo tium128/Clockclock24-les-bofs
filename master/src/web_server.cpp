@@ -1,12 +1,34 @@
 #include "web_server.h"
+#include <Wire.h>
+#include "i2c.h"
+#include "digit.h"
 
 WebServer _server(80);
 
 t_browser_time _browser_time = {0, 0, 0, 0, 0, 0};
 bool _time_changed_browser = false;
 
+// Test state tracking
+static int _motor_positions[8][3][2]; // [board][clock][hand] = angle
+static bool _drivers_enabled = true;
+static uint32_t _test_counter = 1;
+static int _test_speed = 1000;
+static int _test_accel = 500;
+
+// Initialize positions to 270 (6h00)
+void init_test_positions() {
+  for(int b = 0; b < 8; b++)
+    for(int c = 0; c < 3; c++)
+      for(int h = 0; h < 2; h++)
+        _motor_positions[b][c][h] = 270;
+  _drivers_enabled = true;
+}
+
 void server_start()
 {
+  // Initialize test positions
+  init_test_positions();
+
   // Setup web server connection
   _server.enableCORS(true);
   _server.begin();
@@ -17,6 +39,16 @@ void server_start()
   _server.on("/mode", HTTP_POST, handle_post_mode);
   _server.on("/sleep", HTTP_POST, handle_post_sleep);
   _server.on("/connection", HTTP_POST, handle_post_connection);
+  // Diagnostic API endpoints
+  _server.on("/test", HTTP_GET, handle_get_test);
+  _server.on("/api/scan", HTTP_GET, handle_api_scan);
+  _server.on("/api/status", HTTP_GET, handle_api_status);
+  _server.on("/api/motor/test", HTTP_POST, handle_api_motor_test);
+  _server.on("/api/drivers/enable", HTTP_POST, handle_api_drivers_enable);
+  _server.on("/api/drivers/disable", HTTP_POST, handle_api_drivers_disable);
+  _server.on("/api/stop", HTTP_POST, handle_api_stop);
+  _server.on("/api/settings", HTTP_POST, handle_api_settings);
+  _server.on("/api/motor/position", HTTP_POST, handle_api_motor_position);
   Serial.println("WebServer setup done");
 }
 
@@ -110,7 +142,7 @@ void handle_post_adjust()
 
   Serial.printf("Adjust received, clock: %d, m_amount: %d, h_amount: %d\n", 
     clock_index, m_amount, h_amount);
-  adjust_hands(clock_index, m_amount, h_amount);
+  adjust_hands(clock_index, h_amount, m_amount);
 }
 
 void handle_post_mode()
@@ -163,4 +195,496 @@ bool is_time_changed_browser()
 t_browser_time get_browser_time()
 {
   return _browser_time;
+}
+
+// ===== DIAGNOSTIC API HANDLERS =====
+
+// Test page HTML with same styling as main page
+const char TEST_PAGE[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClockClock24 - Diagnostics</title>
+  <style>
+    html{width:100%;height:100%}
+    body{display:flex;flex-direction:column;align-items:center;font-family:Tahoma,Helvetica,sans-serif;color:#fff;background-color:#212121;cursor:default;user-select:none;font-size:14px;padding:20px}
+    h1{margin-bottom:8px}
+    .title{font-size:16px;font-weight:700;margin-bottom:8px;text-align:center;margin-top:24px}
+    .section{width:100%;max-width:600px;margin:10px 0}
+    .btn{min-width:72px;height:48px;margin:4px;font-size:14px;border-width:0;padding:0 16px;background-color:transparent;color:#fff;box-shadow:inset 0 0 2px #dfdfdf;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+    .btn:hover{background-color:#b4b4b44b}
+    .btn.danger{box-shadow:inset 0 0 2px #ff6b6b}
+    .btn.danger:hover{background-color:#ff6b6b33}
+    .btn-back{position:absolute;top:20px;left:20px}
+    select{padding:8px 16px;margin:4px;background-color:#212121;color:#fff;border:1px solid #dfdfdf;font-size:14px}
+    .inline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0}
+    #logs{background:#1a1a1a;padding:10px;height:150px;overflow-y:auto;font-size:12px;font-family:monospace;margin-top:8px;box-shadow:inset 0 0 2px #dfdfdf}
+    .log-entry{margin:2px 0}
+    .log-ok{color:#4f4}
+    .log-err{color:#f44}
+    .log-info{color:#4af}
+    .board-status{display:inline-block;width:30px;height:30px;margin:3px;text-align:center;line-height:30px;font-size:12px}
+    .board-ok{background:#4f4;color:#000}
+    .board-err{background:#333;color:#666}
+    .slider-container{display:flex;align-items:center;gap:10px;margin:8px 0}
+    .slider-container label{min-width:100px}
+    .slider-container input[type=range]{flex:1;max-width:300px}
+    .slider-container span{min-width:60px;text-align:right}
+    input[type=range]{-webkit-appearance:none;background:#333;height:8px;border-radius:4px}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;background:#dfdfdf;border-radius:50%;cursor:pointer}
+    a{color:#8a8a8a;text-decoration:none}
+  </style>
+</head>
+<body>
+  <a href="/" class="btn btn-back">← Back</a>
+  <h1>Diagnostics</h1>
+
+  <div class="section">
+    <div class="title">I2C Scanner</div>
+    <button class="btn" onclick="scanI2C()">Scan I2C Bus</button>
+    <div id="boards" class="inline" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="title">Motor Test</div>
+    <div class="inline">
+      <label>Board: <select id="board">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select></label>
+      <label>Clock: <select id="clock">
+        <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+      </select></label>
+      <label>Hand: <select id="hand">
+        <option value="H">Hour</option><option value="M">Minute</option>
+      </select></label>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn" onclick="testMotor('CW')">Rotate CW 180°</button>
+      <button class="btn" onclick="testMotor('CCW')">Rotate CCW 180°</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="title">Speed Settings</div>
+    <div class="slider-container">
+      <label>Speed:</label>
+      <input type="range" id="speed" min="200" max="5000" value="1000" oninput="updateSpeedLabel()">
+      <span id="speedVal">1000</span>
+    </div>
+    <div class="slider-container">
+      <label>Acceleration:</label>
+      <input type="range" id="accel" min="100" max="2000" value="500" oninput="updateAccelLabel()">
+      <span id="accelVal">500</span>
+    </div>
+    <button class="btn" onclick="applySettings()">Apply</button>
+  </div>
+
+  <div class="section">
+    <div class="title">Drivers</div>
+    <button class="btn" onclick="enableDrivers()">Enable All</button>
+    <button class="btn danger" onclick="disableDrivers()">Disable All</button>
+  </div>
+
+  <div class="section">
+    <div class="title">Position</div>
+    <button class="btn" onclick="moveToStop()">All to 6h00</button>
+  </div>
+
+  <div class="section">
+    <div class="title">Move to Position (Clock Convention)</div>
+    <div class="inline">
+      <label>Board: <select id="pos_board">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+      </select></label>
+      <label>Clock: <select id="pos_clock">
+        <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+      </select></label>
+      <label>Hand: <select id="pos_hand">
+        <option value="H">Hour</option><option value="M">Minute</option>
+      </select></label>
+    </div>
+    <div class="inline">
+      <label>Target: <select id="pos_target">
+        <option value="0">12h (up)</option>
+        <option value="90">3h (right)</option>
+        <option value="180">6h (down)</option>
+        <option value="270">9h (left)</option>
+      </select></label>
+      <label>Direction: <select id="pos_dir">
+        <option value="CW">Clockwise</option>
+        <option value="CCW">Counter-clockwise</option>
+        <option value="MIN">Shortest path</option>
+      </select></label>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn" onclick="moveToPosition()">Move</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="title">Logs</div>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    function log(msg, type='info') {
+      const logs = document.getElementById('logs');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry log-' + type;
+      entry.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+      logs.appendChild(entry);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function updateSpeedLabel() {
+      document.getElementById('speedVal').textContent = document.getElementById('speed').value;
+    }
+    function updateAccelLabel() {
+      document.getElementById('accelVal').textContent = document.getElementById('accel').value;
+    }
+
+    async function applySettings() {
+      const speed = document.getElementById('speed').value;
+      const accel = document.getElementById('accel').value;
+      log('Applying speed=' + speed + ', accel=' + accel, 'info');
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'speed=' + speed + '&accel=' + accel
+        });
+        const data = await res.json();
+        log(data.message, 'ok');
+      } catch(e) {
+        log('Settings failed: ' + e, 'err');
+      }
+    }
+
+    async function scanI2C() {
+      log('Scanning I2C bus...', 'info');
+      try {
+        const res = await fetch('/api/scan');
+        const data = await res.json();
+        const boardsDiv = document.getElementById('boards');
+        boardsDiv.innerHTML = '';
+        data.boards.forEach(b => {
+          const div = document.createElement('div');
+          div.className = 'board-status ' + (b.found ? 'board-ok' : 'board-err');
+          div.textContent = b.address;
+          div.title = b.found ? 'Found' : 'Not found';
+          boardsDiv.appendChild(div);
+        });
+        log('Scan complete: ' + data.count + ' board(s) found', 'ok');
+      } catch(e) {
+        log('Scan failed: ' + e, 'err');
+      }
+    }
+
+    async function testMotor(direction) {
+      const board = document.getElementById('board').value;
+      const clock = document.getElementById('clock').value;
+      const hand = document.getElementById('hand').value;
+      log('Testing: Board ' + board + ', Clock ' + clock + ', ' + hand + ', ' + direction, 'info');
+      try {
+        const res = await fetch('/api/motor/test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'board=' + board + '&clock=' + clock + '&hand=' + hand + '&direction=' + direction
+        });
+        const data = await res.json();
+        log(data.message, data.success ? 'ok' : 'err');
+      } catch(e) {
+        log('Motor test failed: ' + e, 'err');
+      }
+    }
+
+    async function enableDrivers() {
+      log('Enabling drivers...', 'info');
+      try {
+        const res = await fetch('/api/drivers/enable', {method: 'POST'});
+        const data = await res.json();
+        log(data.message, 'ok');
+      } catch(e) {
+        log('Enable failed: ' + e, 'err');
+      }
+    }
+
+    async function disableDrivers() {
+      log('Disabling drivers...', 'info');
+      try {
+        const res = await fetch('/api/drivers/disable', {method: 'POST'});
+        const data = await res.json();
+        log(data.message, 'ok');
+      } catch(e) {
+        log('Disable failed: ' + e, 'err');
+      }
+    }
+
+    async function moveToStop() {
+      log('Moving all to 6h00...', 'info');
+      try {
+        const res = await fetch('/api/stop', {method: 'POST'});
+        const data = await res.json();
+        log(data.message, 'ok');
+      } catch(e) {
+        log('Move failed: ' + e, 'err');
+      }
+    }
+
+    async function moveToPosition() {
+      const board = document.getElementById('pos_board').value;
+      const clock = document.getElementById('pos_clock').value;
+      const hand = document.getElementById('pos_hand').value;
+      const target = document.getElementById('pos_target').value;
+      const dir = document.getElementById('pos_dir').value;
+      const targetLabel = document.getElementById('pos_target').selectedOptions[0].text;
+      log('Moving: Board ' + board + ', Clock ' + clock + ', ' + hand + ' to ' + targetLabel + ' (' + dir + ')', 'info');
+      try {
+        const res = await fetch('/api/motor/position', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'board=' + board + '&clock=' + clock + '&hand=' + hand + '&angle=' + target + '&direction=' + dir
+        });
+        const data = await res.json();
+        log(data.message, data.success ? 'ok' : 'err');
+      } catch(e) {
+        log('Move failed: ' + e, 'err');
+      }
+    }
+
+    window.onload = () => {
+      log('Diagnostics ready', 'ok');
+      scanI2C();
+    };
+  </script>
+</body>
+</html>
+)rawliteral";
+
+void handle_get_test()
+{
+  Serial.println("Handle GET /test");
+  _server.send(200, "text/html", TEST_PAGE);
+}
+
+void handle_api_scan()
+{
+  Serial.println("API: Scan I2C");
+  String json = "{\"boards\":[";
+  int count = 0;
+
+  for(int addr = 1; addr <= 8; addr++) {
+    Wire.beginTransmission(addr);
+    int error = Wire.endTransmission();
+    bool found = (error == 0);
+    if(found) count++;
+
+    if(addr > 1) json += ",";
+    json += "{\"address\":" + String(addr) + ",\"found\":" + (found ? "true" : "false") + "}";
+  }
+
+  json += "],\"count\":" + String(count) + "}";
+  _server.send(200, "application/json", json);
+}
+
+void handle_api_status()
+{
+  Serial.println("API: Get status");
+  String json = "{\"drivers_enabled\":" + String(_drivers_enabled ? "true" : "false");
+  json += ",\"speed\":" + String(_test_speed);
+  json += ",\"accel\":" + String(_test_accel);
+  json += "}";
+  _server.send(200, "application/json", json);
+}
+
+void handle_api_settings()
+{
+  Serial.println("API: Update settings");
+  if(_server.hasArg("speed")) {
+    _test_speed = _server.arg("speed").toInt();
+    if(_test_speed < 200) _test_speed = 200;
+    if(_test_speed > 5000) _test_speed = 5000;
+  }
+  if(_server.hasArg("accel")) {
+    _test_accel = _server.arg("accel").toInt();
+    if(_test_accel < 100) _test_accel = 100;
+    if(_test_accel > 2000) _test_accel = 2000;
+  }
+  String msg = "Speed=" + String(_test_speed) + ", Accel=" + String(_test_accel);
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"" + msg + "\"}");
+}
+
+void handle_api_motor_test()
+{
+  Serial.println("API: Motor test");
+
+  if(!_server.hasArg("board") || !_server.hasArg("clock") ||
+     !_server.hasArg("hand") || !_server.hasArg("direction")) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Missing parameters\"}");
+    return;
+  }
+
+  int board = _server.arg("board").toInt();
+  int clock_idx = _server.arg("clock").toInt();
+  String hand_str = _server.arg("hand");
+  String dir_str = _server.arg("direction");
+
+  if(board < 1 || board > 8 || clock_idx < 0 || clock_idx > 2) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid board or clock\"}");
+    return;
+  }
+
+  int hand = (hand_str == "H" || hand_str == "h") ? 0 : 1;
+  int direction = (dir_str == "CW" || dir_str == "cw") ? CLOCKWISE : COUNTERCLOCKWISE;
+
+  // Build half digit command
+  t_half_digit hd = {0};
+
+  int current_angle = _motor_positions[board-1][clock_idx][hand];
+  int target_angle = (current_angle + 180) % 360;
+
+  for(int i = 0; i < 3; i++) {
+    hd.clocks[i].angle_h = _motor_positions[board-1][i][0];
+    hd.clocks[i].angle_m = _motor_positions[board-1][i][1];
+    hd.clocks[i].speed_h = _test_speed;
+    hd.clocks[i].speed_m = _test_speed;
+    hd.clocks[i].accel_h = _test_accel;
+    hd.clocks[i].accel_m = _test_accel;
+    hd.clocks[i].mode_h = MIN_DISTANCE;
+    hd.clocks[i].mode_m = MIN_DISTANCE;
+    hd.change_counter[i] = _test_counter;
+  }
+
+  if(hand == 0) {
+    hd.clocks[clock_idx].angle_h = target_angle;
+    hd.clocks[clock_idx].mode_h = direction;
+    _motor_positions[board-1][clock_idx][0] = target_angle;
+  } else {
+    hd.clocks[clock_idx].angle_m = target_angle;
+    hd.clocks[clock_idx].mode_m = direction;
+    _motor_positions[board-1][clock_idx][1] = target_angle;
+  }
+
+  hd.change_counter[clock_idx] = ++_test_counter;
+
+  Wire.beginTransmission(board);
+  I2C_writeAnything(hd);
+  Wire.endTransmission();
+
+  String msg = "Board " + String(board) + ", Clock " + String(clock_idx);
+  msg += ", " + String(hand == 0 ? "Hour" : "Minute") + ", " + dir_str;
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"" + msg + "\"}");
+}
+
+void handle_api_drivers_enable()
+{
+  Serial.println("API: Enable drivers");
+  set_all_drivers_enabled(true);
+  _drivers_enabled = true;
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers enabled\"}");
+}
+
+void handle_api_drivers_disable()
+{
+  Serial.println("API: Disable drivers");
+  set_all_drivers_enabled(false);
+  _drivers_enabled = false;
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Drivers disabled\"}");
+}
+
+void handle_api_stop()
+{
+  Serial.println("API: Move to stop position");
+  set_direction(MIN_DISTANCE);
+  set_speed(_test_speed);
+  set_acceleration(_test_accel);
+  set_clock(d_stop);
+
+  for(int b = 0; b < 8; b++)
+    for(int c = 0; c < 3; c++)
+      for(int h = 0; h < 2; h++)
+        _motor_positions[b][c][h] = 270;
+
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"Moving to 6h00\"}");
+}
+
+void handle_api_motor_position()
+{
+  Serial.println("API: Motor position");
+
+  if(!_server.hasArg("board") || !_server.hasArg("clock") ||
+     !_server.hasArg("hand") || !_server.hasArg("angle") || !_server.hasArg("direction")) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Missing parameters\"}");
+    return;
+  }
+
+  int board = _server.arg("board").toInt();
+  int clock_idx = _server.arg("clock").toInt();
+  String hand_str = _server.arg("hand");
+  int target_angle = _server.arg("angle").toInt();
+  String dir_str = _server.arg("direction");
+
+  if(board < 1 || board > 8 || clock_idx < 0 || clock_idx > 2) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Invalid board or clock\"}");
+    return;
+  }
+
+  int hand = (hand_str == "H" || hand_str == "h") ? 0 : 1;
+  int direction;
+  if(dir_str == "CW" || dir_str == "cw") {
+    direction = CLOCKWISE;
+  } else if(dir_str == "CCW" || dir_str == "ccw") {
+    direction = COUNTERCLOCKWISE;
+  } else {
+    direction = MIN_DISTANCE;
+  }
+
+  // Build half digit command
+  t_half_digit hd = {0};
+
+  for(int i = 0; i < 3; i++) {
+    hd.clocks[i].angle_h = _motor_positions[board-1][i][0];
+    hd.clocks[i].angle_m = _motor_positions[board-1][i][1];
+    hd.clocks[i].speed_h = _test_speed;
+    hd.clocks[i].speed_m = _test_speed;
+    hd.clocks[i].accel_h = _test_accel;
+    hd.clocks[i].accel_m = _test_accel;
+    hd.clocks[i].mode_h = MIN_DISTANCE;
+    hd.clocks[i].mode_m = MIN_DISTANCE;
+    hd.change_counter[i] = _test_counter;
+  }
+
+  if(hand == 0) {
+    hd.clocks[clock_idx].angle_h = target_angle;
+    hd.clocks[clock_idx].mode_h = direction;
+    _motor_positions[board-1][clock_idx][0] = target_angle;
+  } else {
+    hd.clocks[clock_idx].angle_m = target_angle;
+    hd.clocks[clock_idx].mode_m = direction;
+    _motor_positions[board-1][clock_idx][1] = target_angle;
+  }
+
+  hd.change_counter[clock_idx] = ++_test_counter;
+
+  Wire.beginTransmission(board);
+  I2C_writeAnything(hd);
+  Wire.endTransmission();
+
+  // Map angle to clock position for message
+  const char* pos_name;
+  switch(target_angle) {
+    case 0: pos_name = "12h"; break;
+    case 90: pos_name = "3h"; break;
+    case 180: pos_name = "6h"; break;
+    case 270: pos_name = "9h"; break;
+    default: pos_name = "?"; break;
+  }
+
+  String msg = "Board " + String(board) + ", Clock " + String(clock_idx);
+  msg += ", " + String(hand == 0 ? "Hour" : "Minute") + " to " + String(pos_name);
+  _server.send(200, "application/json", "{\"success\":true,\"message\":\"" + msg + "\"}");
 }

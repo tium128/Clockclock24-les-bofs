@@ -69,6 +69,52 @@ void handle_post_sleep();
 void handle_post_connection();
 
 /**
+ * Handles GET /test (diagnostic page)
+*/
+void handle_get_test();
+
+/**
+ * Handles GET /api/scan
+*/
+void handle_api_scan();
+
+/**
+ * Handles GET /api/status
+*/
+void handle_api_status();
+
+/**
+ * Handles POST /api/settings
+*/
+void handle_api_settings();
+
+/**
+ * Handles POST /api/motor/test
+*/
+void handle_api_motor_test();
+
+/**
+ * Handles POST /api/drivers/enable
+*/
+void handle_api_drivers_enable();
+
+/**
+ * Handles POST /api/drivers/disable
+*/
+void handle_api_drivers_disable();
+
+/**
+ * Handles POST /api/stop
+*/
+void handle_api_stop();
+
+/**
+ * Handles POST /api/motor/position
+ * Move a specific hand to a target position (clock convention: 0=12h, 90=3h, 180=6h, 270=9h)
+*/
+void handle_api_motor_position();
+
+/**
  * Check if the client changed the time
  * @return true if the client makes a request, false otherwise
 */
