@@ -5,7 +5,9 @@
 #include "board_config.h"
 #include "clock_state.h"
 
-#define INIT_HANDS_ANGLE 270
+// Clock convention: 0° = 12h, 90° = 3h, 180° = 6h, 270° = 9h
+// Hands are manually positioned at 6h before power-on
+#define INIT_HANDS_ANGLE 180
 
 /**
  * Initializes all motor objects and get the I2C address

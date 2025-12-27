@@ -28,6 +28,9 @@ static uint16_t _enabledMask = 0xFFFF;  // All enabled by default
 static unsigned long _cascadeStartTime = 0;
 static int _cascadeCurrentGroup = 0;
 
+// 2/min frequency tracking
+static int _lastSecondTrigger = -1;  // Last second when choreography was triggered (0 or 30)
+
 // Direction enum mapping
 static uint8_t dirToMode(uint8_t dir) {
     return (dir == 0) ? CLOCKWISE : COUNTERCLOCKWISE;
@@ -142,6 +145,8 @@ bool choreo_load(const char* name) {
         keyframe->cascadeDelayMs = kf["cascadeDelayMs"] | 100;
 
         // Clocks data: clocks[slave][clock]
+        // Clock convention: 0° = 12h, 90° = 3h, 180° = 6h, 270° = 9h
+        // No conversion needed - Designer and Firmware use same convention
         JsonArray clocks = kf["clocks"].as<JsonArray>();
         for (int slave = 0; slave < 8 && slave < (int)clocks.size(); slave++) {
             JsonArray slaveClocks = clocks[slave].as<JsonArray>();
@@ -574,13 +579,10 @@ int choreo_get_count() {
     return choreo_list(names, MAX_CHOREOGRAPHIES);
 }
 
-void choreo_on_hour_change() {
-    // Don't trigger if already playing or if mode is off/manual
+// Internal function to trigger a choreography (auto or random)
+static void choreo_trigger_internal() {
+    // Don't trigger if already playing
     if (_state == CHOREO_PLAYING) {
-        return;
-    }
-
-    if (_choreoMode != CHOREO_MODE_AUTO && _choreoMode != CHOREO_MODE_RANDOM) {
         return;
     }
 
@@ -629,5 +631,47 @@ void choreo_on_hour_change() {
             choreo_play();
             Serial.printf("Random-playing choreography: %s\n", names[chosenIdx]);
         }
+    }
+}
+
+void choreo_on_hour_change() {
+    // Only trigger on hour change if frequency is hourly (0)
+    if (get_choreo_frequency() != 0) {
+        return;  // 2/min mode handles its own triggering
+    }
+
+    if (_choreoMode != CHOREO_MODE_AUTO && _choreoMode != CHOREO_MODE_RANDOM) {
+        return;
+    }
+
+    choreo_trigger_internal();
+}
+
+void choreo_check_frequency_trigger(int currentSecond) {
+    // Only for 2/min frequency (value 1)
+    if (get_choreo_frequency() != 1) {
+        return;
+    }
+
+    if (_choreoMode != CHOREO_MODE_AUTO && _choreoMode != CHOREO_MODE_RANDOM) {
+        return;
+    }
+
+    // Trigger at second 0 and second 30
+    int triggerSecond = -1;
+    if (currentSecond >= 0 && currentSecond < 5) {
+        triggerSecond = 0;
+    } else if (currentSecond >= 30 && currentSecond < 35) {
+        triggerSecond = 30;
+    }
+
+    // Only trigger once per window
+    if (triggerSecond >= 0 && triggerSecond != _lastSecondTrigger) {
+        _lastSecondTrigger = triggerSecond;
+        Serial.printf("2/min trigger at second %d\n", currentSecond);
+        choreo_trigger_internal();
+    } else if (triggerSecond < 0) {
+        // Reset trigger flag outside trigger windows
+        _lastSecondTrigger = -1;
     }
 }
