@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include "i2c.h"
 #include "digit.h"
+#include "choreography.h"
 
 WebServer _server(80);
 
@@ -49,6 +50,19 @@ void server_start()
   _server.on("/api/stop", HTTP_POST, handle_api_stop);
   _server.on("/api/settings", HTTP_POST, handle_api_settings);
   _server.on("/api/motor/position", HTTP_POST, handle_api_motor_position);
+  // Choreography API endpoints
+  _server.on("/choreography", HTTP_GET, handle_get_choreography);
+  _server.on("/api/choreo/list", HTTP_GET, handle_api_choreo_list);
+  _server.on("/api/choreo/load", HTTP_GET, handle_api_choreo_load);
+  _server.on("/api/choreo/save", HTTP_POST, handle_api_choreo_save);
+  _server.on("/api/choreo/delete", HTTP_POST, handle_api_choreo_delete);
+  _server.on("/api/choreo/play", HTTP_POST, handle_api_choreo_play);
+  _server.on("/api/choreo/pause", HTTP_POST, handle_api_choreo_pause);
+  _server.on("/api/choreo/stop", HTTP_POST, handle_api_choreo_stop);
+  _server.on("/api/choreo/next", HTTP_POST, handle_api_choreo_next);
+  _server.on("/api/choreo/prev", HTTP_POST, handle_api_choreo_prev);
+  _server.on("/api/choreo/status", HTTP_GET, handle_api_choreo_status);
+  _server.on("/api/choreo/apply", HTTP_POST, handle_api_choreo_apply);
   Serial.println("WebServer setup done");
 }
 
@@ -687,4 +701,506 @@ void handle_api_motor_position()
   String msg = "Board " + String(board) + ", Clock " + String(clock_idx);
   msg += ", " + String(hand == 0 ? "Hour" : "Minute") + " to " + String(pos_name);
   _server.send(200, "application/json", "{\"success\":true,\"message\":\"" + msg + "\"}");
+}
+
+// ===== CHOREOGRAPHY PAGE AND API HANDLERS =====
+
+const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClockClock24 - Choreography Designer</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1a2e;color:#eee;min-height:100vh;padding:15px}
+    .container{max-width:1400px;margin:0 auto}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid #333;flex-wrap:wrap;gap:10px}
+    header h1{font-size:1.3rem;color:#4ecdc4}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .controls input[type="text"],.controls select{padding:6px 10px;border:1px solid #444;border-radius:4px;background:#2a2a4a;color:#fff;font-size:0.9rem}
+    button{padding:6px 12px;border:none;border-radius:4px;background:#4ecdc4;color:#1a1a2e;cursor:pointer;font-weight:500;font-size:0.85rem;transition:all 0.2s}
+    button:hover{background:#45b7aa}
+    button.danger{background:#e74c3c;color:#fff}
+    button.danger:hover{background:#c0392b}
+    .btn-back{position:fixed;top:15px;left:15px;background:#3a3a5a;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:0.85rem}
+    .section{background:#2a2a4a;border-radius:8px;padding:15px;margin-bottom:15px}
+    .section h2{font-size:1rem;color:#888;margin-bottom:10px}
+    .timeline{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+    .kf-thumb{min-width:80px;height:50px;background:#3a3a5a;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid transparent;font-size:0.8rem}
+    .kf-thumb:hover{background:#4a4a6a}
+    .kf-thumb.active{border-color:#4ecdc4;background:#3a4a5a}
+    .kf-thumb span{font-size:0.7rem;color:#888}
+    .matrix{display:grid;grid-template-columns:50px repeat(8,1fr);gap:6px}
+    .row-label{display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:#888}
+    .slave-labels{display:grid;grid-template-columns:50px repeat(8,1fr);gap:6px;margin-bottom:6px;font-size:0.75rem;color:#888;text-align:center}
+    .clock-cell{background:#1a1a2e;border-radius:6px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid transparent;cursor:pointer}
+    .clock-cell:hover{background:#252545}
+    .clock-cell.selected{border-color:#4ecdc4}
+    .clock-face{width:50px;height:50px;border-radius:50%;background:#fff;position:relative;border:2px solid #333}
+    .clock-face::before{content:'';position:absolute;top:50%;left:50%;width:5px;height:5px;background:#333;border-radius:50%;transform:translate(-50%,-50%);z-index:10}
+    .hand{position:absolute;bottom:50%;left:50%;transform-origin:bottom center;border-radius:2px}
+    .hand-h{width:3px;height:14px;background:#e74c3c;margin-left:-1.5px}
+    .hand-m{width:2px;height:20px;background:#3498db;margin-left:-1px}
+    .clock-inputs{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:100%}
+    .input-group{display:flex;flex-direction:column;gap:2px}
+    .input-group label{font-size:0.6rem;color:#888;text-align:center}
+    .input-group input,.input-group select{width:100%;padding:3px;border:1px solid #444;border-radius:3px;background:#2a2a4a;color:#fff;text-align:center;font-size:0.75rem}
+    .input-h input,.input-h select{border-color:#e74c3c}
+    .input-m input,.input-m select{border-color:#3498db}
+    .comment-section{margin-top:15px}
+    .comment-section textarea{width:100%;height:60px;padding:8px;border:1px solid #444;border-radius:4px;background:#1a1a2e;color:#fff;resize:vertical;font-family:inherit;font-size:0.85rem}
+    .sidebar{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px}
+    .action-group{background:#2a2a4a;border-radius:8px;padding:12px}
+    .action-group h4{font-size:0.8rem;color:#4ecdc4;margin-bottom:8px}
+    .action-group button{display:block;width:100%;margin-bottom:5px;background:#3a3a5a;color:#fff}
+    .action-group button:hover{background:#4a4a6a}
+    .player-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    .status{padding:4px 8px;border-radius:4px;font-size:0.8rem}
+    .status.stopped{background:#666}
+    .status.playing{background:#27ae60}
+    .status.paused{background:#f39c12}
+    #previewCanvas{background:#1a1a2e;border-radius:8px;width:100%;max-width:700px}
+    .timing-inputs{display:flex;gap:15px;margin-top:10px;flex-wrap:wrap}
+    .timing-inputs label{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#888}
+    .timing-inputs input{width:80px;padding:4px;border:1px solid #444;border-radius:4px;background:#2a2a4a;color:#fff;text-align:center}
+    @media(max-width:900px){.matrix{grid-template-columns:40px repeat(8,1fr);gap:4px}.clock-face{width:35px;height:35px}.hand-h{height:10px}.hand-m{height:14px}.clock-inputs{display:none}}
+  </style>
+</head>
+<body>
+  <a href="/" class="btn-back">< Back</a>
+  <div class="container">
+    <header>
+      <h1>Choreography Designer</h1>
+      <div class="controls">
+        <select id="choreoSelect" onchange="loadSelected()"><option value="">-- New --</option></select>
+        <input type="text" id="projectName" placeholder="Name" value="new_choreo" style="width:150px">
+        <button onclick="saveProject()">Save</button>
+        <button onclick="exportJSON()">Export</button>
+        <button onclick="document.getElementById('importFile').click()">Import</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+        <button class="danger" onclick="deleteProject()">Delete</button>
+      </div>
+    </header>
+
+    <div class="section">
+      <h2>Keyframes</h2>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button onclick="addKeyframe()">+ Add</button>
+        <button onclick="duplicateKeyframe()">Duplicate</button>
+        <button onclick="deleteKeyframe()" class="danger">Delete</button>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+
+    <div class="section">
+      <h2>Keyframe <span id="kfNum">1</span></h2>
+      <div class="slave-labels">
+        <span></span><span>S1</span><span>S2</span><span>S3</span><span>S4</span><span>S5</span><span>S6</span><span>S7</span><span>S8</span>
+      </div>
+      <div class="matrix" id="matrix"></div>
+      <div class="timing-inputs">
+        <label>Transition: <input type="number" id="transitionMs" value="1000" min="100" max="10000" step="100" onchange="saveTransition()">ms</label>
+        <label>Delay: <input type="number" id="delayMs" value="0" min="0" max="10000" step="100" onchange="saveDelay()">ms</label>
+        <label><input type="checkbox" id="loopCheck" onchange="saveLoop()"> Loop</label>
+      </div>
+      <div class="comment-section">
+        <textarea id="comment" placeholder="Instructions (e.g., trigger columns with 500ms offset)" onchange="saveComment()"></textarea>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="action-group">
+        <h4>Presets</h4>
+        <button onclick="setAll(0,0)">12h (0/0)</button>
+        <button onclick="setAll(90,90)">3h (90/90)</button>
+        <button onclick="setAll(180,180)">6h (180/180)</button>
+        <button onclick="setAll(270,270)">9h (270/270)</button>
+        <button onclick="setAll(135,315)">Diagonal</button>
+      </div>
+      <div class="action-group">
+        <h4>Direction</h4>
+        <button onclick="setDir('CW','CW')">All CW</button>
+        <button onclick="setDir('CCW','CCW')">All CCW</button>
+        <button onclick="setDir('CW','CCW')">H:CW M:CCW</button>
+      </div>
+      <div class="action-group">
+        <h4>Selection</h4>
+        <button onclick="selectAll()">Select All</button>
+        <button onclick="selectNone()">Deselect</button>
+        <button onclick="selectCol()">Select Column</button>
+        <button onclick="selectRow()">Select Row</button>
+      </div>
+      <div class="action-group">
+        <h4>Hardware Control</h4>
+        <div class="player-controls">
+          <button onclick="hwPrev()">Prev</button>
+          <button onclick="hwPlay()" id="playBtn">Play</button>
+          <button onclick="hwStop()">Stop</button>
+          <button onclick="hwNext()">Next</button>
+          <span class="status stopped" id="hwStatus">Stopped</span>
+        </div>
+        <button onclick="hwApply()">Apply Current KF</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Preview</h2>
+      <canvas id="previewCanvas" width="700" height="200"></canvas>
+    </div>
+  </div>
+
+<script>
+let keyframes=[];
+let currentKF=0;
+let selected=new Set();
+let isPlaying=false;
+
+document.addEventListener('DOMContentLoaded',()=>{addKeyframe();loadList();render();});
+
+function createKF(){
+  const kf={id:Date.now(),comment:'',transitionMs:1000,delayMs:0,clocks:[]};
+  for(let s=0;s<8;s++){kf.clocks[s]=[];for(let c=0;c<3;c++)kf.clocks[s][c]={angleH:180,angleM:180,dirH:'CW',dirM:'CW'};}
+  return kf;
+}
+
+function addKeyframe(){keyframes.push(createKF());currentKF=keyframes.length-1;render();}
+function duplicateKeyframe(){if(!keyframes.length)return;const d=JSON.parse(JSON.stringify(keyframes[currentKF]));d.id=Date.now();keyframes.splice(currentKF+1,0,d);currentKF++;render();}
+function deleteKeyframe(){if(keyframes.length<=1){alert('Need at least 1 keyframe');return;}keyframes.splice(currentKF,1);if(currentKF>=keyframes.length)currentKF=keyframes.length-1;render();}
+function selectKF(i){currentKF=i;render();}
+
+function render(){
+  const tl=document.getElementById('timeline');
+  tl.innerHTML='';
+  keyframes.forEach((k,i)=>{
+    const d=document.createElement('div');
+    d.className='kf-thumb'+(i===currentKF?' active':'');
+    d.innerHTML='<strong>KF '+(i+1)+'</strong><span>'+(k.comment?k.comment.substring(0,12):'')+'</span>';
+    d.onclick=()=>selectKF(i);
+    tl.appendChild(d);
+  });
+
+  const kf=keyframes[currentKF];
+  document.getElementById('kfNum').textContent=currentKF+1;
+  document.getElementById('comment').value=kf.comment||'';
+  document.getElementById('transitionMs').value=kf.transitionMs||1000;
+  document.getElementById('delayMs').value=kf.delayMs||0;
+
+  const m=document.getElementById('matrix');
+  m.innerHTML='';
+  for(let r=0;r<3;r++){
+    const rl=document.createElement('div');rl.className='row-label';rl.textContent='C'+r;m.appendChild(rl);
+    for(let s=0;s<8;s++){
+      const cl=kf.clocks[s][r];const id=s+'-'+r;const sel=selected.has(id);
+      const cell=document.createElement('div');
+      cell.className='clock-cell'+(sel?' selected':'');
+      cell.innerHTML=`
+        <div class="clock-face">
+          <div class="hand hand-h" style="transform:rotate(${cl.angleH}deg)"></div>
+          <div class="hand hand-m" style="transform:rotate(${cl.angleM}deg)"></div>
+        </div>
+        <div class="clock-inputs">
+          <div class="input-group input-h">
+            <label>H</label>
+            <input type="number" min="0" max="359" value="${cl.angleH}" onchange="updAngle(${s},${r},'H',this.value)">
+            <select onchange="updDir(${s},${r},'H',this.value)">
+              <option value="CW"${cl.dirH==='CW'?' selected':''}>CW</option>
+              <option value="CCW"${cl.dirH==='CCW'?' selected':''}>CCW</option>
+            </select>
+          </div>
+          <div class="input-group input-m">
+            <label>M</label>
+            <input type="number" min="0" max="359" value="${cl.angleM}" onchange="updAngle(${s},${r},'M',this.value)">
+            <select onchange="updDir(${s},${r},'M',this.value)">
+              <option value="CW"${cl.dirM==='CW'?' selected':''}>CW</option>
+              <option value="CCW"${cl.dirM==='CCW'?' selected':''}>CCW</option>
+            </select>
+          </div>
+        </div>`;
+      cell.onclick=(e)=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;toggleSel(s,r,e.shiftKey);};
+      m.appendChild(cell);
+    }
+  }
+  drawPreview();
+}
+
+function updAngle(s,c,h,v){const a=((parseInt(v)||0)%360+360)%360;if(h==='H')keyframes[currentKF].clocks[s][c].angleH=a;else keyframes[currentKF].clocks[s][c].angleM=a;render();}
+function updDir(s,c,h,v){if(h==='H')keyframes[currentKF].clocks[s][c].dirH=v;else keyframes[currentKF].clocks[s][c].dirM=v;}
+function saveComment(){keyframes[currentKF].comment=document.getElementById('comment').value;render();}
+function saveTransition(){keyframes[currentKF].transitionMs=parseInt(document.getElementById('transitionMs').value)||1000;}
+function saveDelay(){keyframes[currentKF].delayMs=parseInt(document.getElementById('delayMs').value)||0;}
+function saveLoop(){/* stored in project */}
+
+function toggleSel(s,c,add){const id=s+'-'+c;if(!add)selected.clear();if(selected.has(id))selected.delete(id);else selected.add(id);render();}
+function selectAll(){selected.clear();for(let s=0;s<8;s++)for(let c=0;c<3;c++)selected.add(s+'-'+c);render();}
+function selectNone(){selected.clear();render();}
+function selectCol(){const col=prompt('Slave (1-8):');const s=parseInt(col)-1;if(isNaN(s)||s<0||s>7)return;selected.clear();for(let c=0;c<3;c++)selected.add(s+'-'+c);render();}
+function selectRow(){const row=prompt('Clock (0-2):');const c=parseInt(row);if(isNaN(c)||c<0||c>2)return;selected.clear();for(let s=0;s<8;s++)selected.add(s+'-'+c);render();}
+
+function setAll(aH,aM){const t=selected.size>0?selected:getAllIds();t.forEach(id=>{const[s,c]=id.split('-').map(Number);keyframes[currentKF].clocks[s][c].angleH=aH;keyframes[currentKF].clocks[s][c].angleM=aM;});render();}
+function setDir(dH,dM){const t=selected.size>0?selected:getAllIds();t.forEach(id=>{const[s,c]=id.split('-').map(Number);keyframes[currentKF].clocks[s][c].dirH=dH;keyframes[currentKF].clocks[s][c].dirM=dM;});render();}
+function getAllIds(){const ids=new Set();for(let s=0;s<8;s++)for(let c=0;c<3;c++)ids.add(s+'-'+c);return ids;}
+
+function drawPreview(){
+  const canvas=document.getElementById('previewCanvas');
+  const ctx=canvas.getContext('2d');
+  const kf=keyframes[currentKF];
+  ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,canvas.width,canvas.height);
+  const sz=22,pad=6,sx=35,sy=25;
+  for(let s=0;s<8;s++){
+    for(let c=0;c<3;c++){
+      const x=sx+s*(sz*2+pad),y=sy+c*(sz*2+pad);
+      const cl=kf.clocks[s][c];
+      ctx.beginPath();ctx.arc(x+sz,y+sz,sz,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#333';ctx.lineWidth=2;ctx.stroke();
+      const hRad=(cl.angleH-90)*Math.PI/180;
+      ctx.beginPath();ctx.moveTo(x+sz,y+sz);ctx.lineTo(x+sz+Math.cos(hRad)*sz*0.5,y+sz+Math.sin(hRad)*sz*0.5);ctx.strokeStyle='#e74c3c';ctx.lineWidth=3;ctx.stroke();
+      const mRad=(cl.angleM-90)*Math.PI/180;
+      ctx.beginPath();ctx.moveTo(x+sz,y+sz);ctx.lineTo(x+sz+Math.cos(mRad)*sz*0.7,y+sz+Math.sin(mRad)*sz*0.7);ctx.strokeStyle='#3498db';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(x+sz,y+sz,3,0,Math.PI*2);ctx.fillStyle='#333';ctx.fill();
+    }
+  }
+  ctx.fillStyle='#888';ctx.font='10px sans-serif';ctx.textAlign='center';
+  for(let s=0;s<8;s++)ctx.fillText('S'+(s+1),sx+s*(sz*2+pad)+sz,15);
+  ctx.textAlign='right';
+  for(let c=0;c<3;c++)ctx.fillText('C'+c,28,sy+c*(sz*2+pad)+sz+4);
+}
+
+async function loadList(){
+  try{
+    const res=await fetch('/api/choreo/list');
+    const data=await res.json();
+    const sel=document.getElementById('choreoSelect');
+    sel.innerHTML='<option value="">-- New --</option>';
+    data.choreographies.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+  }catch(e){console.error('List error:',e);}
+}
+
+async function loadSelected(){
+  const name=document.getElementById('choreoSelect').value;
+  if(!name){keyframes=[createKF()];currentKF=0;document.getElementById('projectName').value='new_choreo';render();return;}
+  try{
+    const res=await fetch('/api/choreo/load?name='+encodeURIComponent(name));
+    const data=await res.json();
+    if(data.success&&data.choreography){
+      const ch=data.choreography;
+      document.getElementById('projectName').value=ch.name;
+      document.getElementById('loopCheck').checked=ch.loop||false;
+      keyframes=ch.keyframes||[createKF()];
+      currentKF=0;render();
+    }
+  }catch(e){console.error('Load error:',e);}
+}
+
+async function saveProject(){
+  const name=document.getElementById('projectName').value||'unnamed';
+  const loop=document.getElementById('loopCheck').checked;
+  const proj={name,loop,keyframes};
+  try{
+    const res=await fetch('/api/choreo/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(proj)});
+    const data=await res.json();
+    alert(data.success?'Saved!':'Error: '+data.message);
+    loadList();
+  }catch(e){alert('Save error:'+e);}
+}
+
+async function deleteProject(){
+  const name=document.getElementById('choreoSelect').value;
+  if(!name){alert('Select a choreography first');return;}
+  if(!confirm('Delete '+name+'?'))return;
+  try{
+    const res=await fetch('/api/choreo/delete?name='+encodeURIComponent(name),{method:'POST'});
+    const data=await res.json();
+    alert(data.success?'Deleted':'Error');
+    loadList();
+    keyframes=[createKF()];currentKF=0;document.getElementById('projectName').value='new_choreo';render();
+  }catch(e){alert('Delete error:'+e);}
+}
+
+function exportJSON(){
+  const name=document.getElementById('projectName').value||'choreo';
+  const loop=document.getElementById('loopCheck').checked;
+  const proj={name,loop,keyframes,version:'1.0',created:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(proj,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.json';a.click();
+}
+
+function importJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.keyframes){
+        keyframes=data.keyframes;currentKF=0;
+        document.getElementById('projectName').value=data.name||'imported';
+        document.getElementById('loopCheck').checked=data.loop||false;
+        render();alert('Imported!');
+      }
+    }catch(err){alert('Import error:'+err);}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+async function hwPlay(){
+  try{await fetch('/api/choreo/play',{method:'POST'});updateStatus();}catch(e){console.error(e);}
+}
+async function hwStop(){
+  try{await fetch('/api/choreo/stop',{method:'POST'});updateStatus();}catch(e){console.error(e);}
+}
+async function hwNext(){
+  try{await fetch('/api/choreo/next',{method:'POST'});updateStatus();}catch(e){console.error(e);}
+}
+async function hwPrev(){
+  try{await fetch('/api/choreo/prev',{method:'POST'});updateStatus();}catch(e){console.error(e);}
+}
+async function hwApply(){
+  const name=document.getElementById('projectName').value;
+  await saveProject();
+  try{
+    await fetch('/api/choreo/load?name='+encodeURIComponent(name));
+    await fetch('/api/choreo/apply?keyframe='+currentKF,{method:'POST'});
+    alert('Applied keyframe '+(currentKF+1));
+  }catch(e){alert('Error:'+e);}
+}
+
+async function updateStatus(){
+  try{
+    const res=await fetch('/api/choreo/status');
+    const data=await res.json();
+    const st=document.getElementById('hwStatus');
+    st.textContent=data.state;
+    st.className='status '+data.state.toLowerCase();
+  }catch(e){}
+}
+setInterval(updateStatus,2000);
+</script>
+</body>
+</html>
+)rawliteral";
+
+void handle_get_choreography() {
+  Serial.println("Handle GET /choreography");
+  _server.send(200, "text/html", CHOREO_PAGE);
+}
+
+void handle_api_choreo_list() {
+  Serial.println("API: List choreographies");
+  char names[MAX_CHOREOGRAPHIES][CHOREO_NAME_LEN];
+  int count = choreo_list(names, MAX_CHOREOGRAPHIES);
+
+  String json = "{\"choreographies\":[";
+  for (int i = 0; i < count; i++) {
+    if (i > 0) json += ",";
+    json += "\"" + String(names[i]) + "\"";
+  }
+  json += "]}";
+
+  _server.send(200, "application/json", json);
+}
+
+void handle_api_choreo_load() {
+  Serial.println("API: Load choreography");
+
+  if (!_server.hasArg("name")) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Missing name\"}");
+    return;
+  }
+
+  String name = _server.arg("name");
+  if (choreo_load(name.c_str())) {
+    String json = "{\"success\":true,\"choreography\":" + choreo_get_json() + "}";
+    _server.send(200, "application/json", json);
+  } else {
+    _server.send(404, "application/json", "{\"success\":false,\"message\":\"Not found\"}");
+  }
+}
+
+void handle_api_choreo_save() {
+  Serial.println("API: Save choreography");
+
+  if (_server.hasArg("plain")) {
+    String body = _server.arg("plain");
+    if (choreo_save(body.c_str())) {
+      _server.send(200, "application/json", "{\"success\":true}");
+    } else {
+      _server.send(500, "application/json", "{\"success\":false,\"message\":\"Save failed\"}");
+    }
+  } else {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"No data\"}");
+  }
+}
+
+void handle_api_choreo_delete() {
+  Serial.println("API: Delete choreography");
+
+  if (!_server.hasArg("name")) {
+    _server.send(400, "application/json", "{\"success\":false,\"message\":\"Missing name\"}");
+    return;
+  }
+
+  String name = _server.arg("name");
+  if (choreo_delete(name.c_str())) {
+    _server.send(200, "application/json", "{\"success\":true}");
+  } else {
+    _server.send(500, "application/json", "{\"success\":false,\"message\":\"Delete failed\"}");
+  }
+}
+
+void handle_api_choreo_play() {
+  Serial.println("API: Play choreography");
+  choreo_play();
+  _server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handle_api_choreo_pause() {
+  Serial.println("API: Pause choreography");
+  choreo_pause();
+  _server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handle_api_choreo_stop() {
+  Serial.println("API: Stop choreography");
+  choreo_stop();
+  _server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handle_api_choreo_next() {
+  Serial.println("API: Next keyframe");
+  choreo_next_keyframe();
+  _server.send(200, "application/json", "{\"success\":true,\"keyframe\":" + String(choreo_get_current_keyframe()) + "}");
+}
+
+void handle_api_choreo_prev() {
+  Serial.println("API: Previous keyframe");
+  choreo_prev_keyframe();
+  _server.send(200, "application/json", "{\"success\":true,\"keyframe\":" + String(choreo_get_current_keyframe()) + "}");
+}
+
+void handle_api_choreo_status() {
+  t_choreo_state state = choreo_get_state();
+  const char* stateStr;
+  switch (state) {
+    case CHOREO_PLAYING: stateStr = "Playing"; break;
+    case CHOREO_PAUSED: stateStr = "Paused"; break;
+    default: stateStr = "Stopped"; break;
+  }
+
+  String json = "{\"state\":\"" + String(stateStr) + "\",";
+  json += "\"keyframe\":" + String(choreo_get_current_keyframe()) + ",";
+  json += "\"name\":\"" + String(choreo_get_current_name()) + "\"}";
+
+  _server.send(200, "application/json", json);
+}
+
+void handle_api_choreo_apply() {
+  Serial.println("API: Apply keyframe");
+
+  int kf = 0;
+  if (_server.hasArg("keyframe")) {
+    kf = _server.arg("keyframe").toInt();
+  }
+
+  choreo_apply_keyframe(kf);
+  _server.send(200, "application/json", "{\"success\":true}");
 }

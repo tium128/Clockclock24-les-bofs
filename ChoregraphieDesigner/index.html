@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClockClock24 - Choreography Designer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ClockClock24 Choreography Designer</h1>
+            <div class="project-controls">
+                <input type="text" id="projectName" placeholder="Nom du projet" value="nouvelle_choregraphie">
+                <button onclick="exportProject()">📤 Exporter JSON</button>
+                <button onclick="importProject()">📥 Importer JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleFileImport(event)">
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Keyframes Timeline -->
+            <div class="timeline-section">
+                <h2>Keyframes</h2>
+                <div class="timeline-controls">
+                    <button onclick="addKeyframe()">+ Ajouter Keyframe</button>
+                    <button onclick="duplicateKeyframe()">📋 Dupliquer</button>
+                    <button onclick="deleteKeyframe()">🗑️ Supprimer</button>
+                </div>
+                <div class="timeline" id="timeline"></div>
+            </div>
+
+            <!-- Clock Matrix -->
+            <div class="matrix-section">
+                <h2>Keyframe <span id="currentKeyframeNum">1</span></h2>
+                <div class="matrix-header">
+                    <div class="slave-labels">
+                        <span></span>
+                        <span>Slave 1</span>
+                        <span>Slave 2</span>
+                        <span>Slave 3</span>
+                        <span>Slave 4</span>
+                        <span>Slave 5</span>
+                        <span>Slave 6</span>
+                        <span>Slave 7</span>
+                        <span>Slave 8</span>
+                    </div>
+                </div>
+                <div class="clock-matrix" id="clockMatrix"></div>
+
+                <!-- Comment section -->
+                <div class="comment-section">
+                    <label for="keyframeComment">Commentaire / Instructions:</label>
+                    <textarea id="keyframeComment" placeholder="Ex: déclenche les mouvements colonne par colonne avec un décalage de 500ms" onchange="saveComment()"></textarea>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>Actions rapides</h3>
+                <div class="action-group">
+                    <h4>Preset angles</h4>
+                    <button onclick="setAllAngles(0, 0)">12:00 (0°/0°)</button>
+                    <button onclick="setAllAngles(90, 90)">3:00 (90°/90°)</button>
+                    <button onclick="setAllAngles(180, 180)">6:00 (180°/180°)</button>
+                    <button onclick="setAllAngles(270, 270)">9:00 (270°/270°)</button>
+                    <button onclick="setAllAngles(135, 315)">Diagonal ↗</button>
+                    <button onclick="setAllAngles(225, 45)">Diagonal ↙</button>
+                </div>
+                <div class="action-group">
+                    <h4>Directions</h4>
+                    <button onclick="setAllDirections('CW', 'CW')">Tout CW</button>
+                    <button onclick="setAllDirections('CCW', 'CCW')">Tout CCW</button>
+                    <button onclick="setAllDirections('CW', 'CCW')">H:CW M:CCW</button>
+                    <button onclick="setAllDirections('CCW', 'CW')">H:CCW M:CW</button>
+                </div>
+                <div class="action-group">
+                    <h4>Sélection</h4>
+                    <button onclick="selectAll()">Tout sélectionner</button>
+                    <button onclick="selectNone()">Désélectionner</button>
+                    <button onclick="selectColumn()">Sélectionner colonne</button>
+                    <button onclick="selectRow()">Sélectionner ligne</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-section">
+            <h2>Aperçu</h2>
+            <div class="preview-controls">
+                <button onclick="previewPrevious()">⏮️</button>
+                <button onclick="playPreview()" id="playBtn">▶️ Play</button>
+                <button onclick="previewNext()">⏭️</button>
+                <label>
+                    Durée transition:
+                    <input type="number" id="transitionDuration" value="1000" min="100" max="5000" step="100">ms
+                </label>
+            </div>
+            <canvas id="previewCanvas" width="640" height="240"></canvas>
+        </div>
+
+        <!-- Code Output -->
+        <div class="code-section">
+            <h2>Code C++ généré</h2>
+            <button onclick="generateCode()">Générer le code</button>
+            <button onclick="copyCode()">📋 Copier</button>
+            <pre id="codeOutput"></pre>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

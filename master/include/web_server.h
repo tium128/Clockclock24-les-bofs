@@ -114,6 +114,68 @@ void handle_api_stop();
 */
 void handle_api_motor_position();
 
+// ===== CHOREOGRAPHY ENDPOINTS =====
+
+/**
+ * Handles GET /choreography (designer page)
+*/
+void handle_get_choreography();
+
+/**
+ * Handles GET /api/choreo/list
+*/
+void handle_api_choreo_list();
+
+/**
+ * Handles GET /api/choreo/load?name=xxx
+*/
+void handle_api_choreo_load();
+
+/**
+ * Handles POST /api/choreo/save (body = JSON)
+*/
+void handle_api_choreo_save();
+
+/**
+ * Handles POST /api/choreo/delete?name=xxx
+*/
+void handle_api_choreo_delete();
+
+/**
+ * Handles POST /api/choreo/play
+*/
+void handle_api_choreo_play();
+
+/**
+ * Handles POST /api/choreo/pause
+*/
+void handle_api_choreo_pause();
+
+/**
+ * Handles POST /api/choreo/stop
+*/
+void handle_api_choreo_stop();
+
+/**
+ * Handles POST /api/choreo/next
+*/
+void handle_api_choreo_next();
+
+/**
+ * Handles POST /api/choreo/prev
+*/
+void handle_api_choreo_prev();
+
+/**
+ * Handles GET /api/choreo/status
+*/
+void handle_api_choreo_status();
+
+/**
+ * Handles POST /api/choreo/apply?keyframe=N
+*/
+void handle_api_choreo_apply();
+
 /**
  * Check if the client changed the time
  * @return true if the client makes a request, false otherwise

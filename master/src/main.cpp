@@ -13,6 +13,7 @@
 #include "web_server.h"
 #include "clock_config.h"
 #include "ntp.h"
+#include "choreography.h"
 
 
 int last_hour = -1;
@@ -142,6 +143,8 @@ void setup() {
   set_wifi_status_led(get_connection_mode());
   // Starts web server
   server_start();
+  // Initialize choreography system (LittleFS)
+  choreo_init();
 }
 
 void loop() {
@@ -164,6 +167,9 @@ void loop() {
   }
 
   get_clock_mode() != OFF ? set_time() : stop();
+
+  // Update choreography player
+  choreo_update();
 
   update_MDNS();
   handle_webclient();
