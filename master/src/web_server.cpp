@@ -3,6 +3,7 @@
 #include "i2c.h"
 #include "digit.h"
 #include "choreography.h"
+#include "designer_page.h"
 
 // Forward declarations for choreography mode API
 void handle_api_choreo_mode_get();
@@ -11,6 +12,7 @@ void handle_api_choreo_enable();
 void handle_api_choreo_list_full();
 void handle_api_choreo_frequency_get();
 void handle_api_choreo_frequency_set();
+void handle_get_designer();
 
 WebServer _server(80);
 
@@ -60,6 +62,7 @@ void server_start()
   _server.on("/api/motor/position", HTTP_POST, handle_api_motor_position);
   // Choreography API endpoints
   _server.on("/choreography", HTTP_GET, handle_get_choreography);
+  _server.on("/designer", HTTP_GET, handle_get_designer);
   _server.on("/api/choreo/list", HTTP_GET, handle_api_choreo_list);
   _server.on("/api/choreo/load", HTTP_GET, handle_api_choreo_load);
   _server.on("/api/choreo/save", HTTP_POST, handle_api_choreo_save);
@@ -777,7 +780,10 @@ const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
   <div class="container">
     <header>
       <h1>Choreographies</h1>
-      <a href="/" class="btn-back">Retour</a>
+      <div style="display:flex;gap:8px">
+        <a href="/designer" class="btn-back">Designer</a>
+        <a href="/" class="btn-back">Retour</a>
+      </div>
     </header>
 
     <div class="tabs">
@@ -833,7 +839,7 @@ const char CHOREO_PAGE[] PROGMEM = R"rawliteral(
       <div class="section">
         <h2>Uploader une choreographie</h2>
         <p style="color:#888;margin-bottom:15px;font-size:0.9rem">
-          Creez vos choreographies avec le designer local (ChoregraphieDesigner/index.html) puis uploadez le fichier JSON ici.
+          Creez vos choreographies avec le <a href="/designer" style="color:#8a8a8a">Designer integre</a> puis uploadez le fichier JSON ici.
         </p>
         <div class="upload-zone" onclick="document.getElementById('uploadFile').click()">
           <input type="file" id="uploadFile" accept=".json" onchange="uploadFile(event)">
@@ -1006,6 +1012,11 @@ setInterval(updateStatus,2000);
 void handle_get_choreography() {
   Serial.println("Handle GET /choreography");
   _server.send(200, "text/html", CHOREO_PAGE);
+}
+
+void handle_get_designer() {
+  Serial.println("Handle GET /designer");
+  _server.send(200, "text/html", DESIGNER_PAGE);
 }
 
 void handle_api_choreo_list() {
