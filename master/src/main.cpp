@@ -166,7 +166,10 @@ void loop() {
     setSyncProvider(get_NTP_time);
   }
 
-  get_clock_mode() != OFF ? set_time() : stop();
+  // Only update time display if no choreography is playing
+  if (choreo_get_state() != CHOREO_PLAYING) {
+    get_clock_mode() != OFF ? set_time() : stop();
+  }
 
   // Update choreography player
   choreo_update();
@@ -189,8 +192,22 @@ void set_time()
       delay(500); // Wait for all drivers to be fully enabled before sending positions
     }
     is_stopped = false;
+
+    // Check for hour change to trigger choreography
+    bool hourChanged = (hour() != last_hour) && (last_hour != -1);
+
     last_hour = hour();
     last_minute = minute();
+
+    // Trigger choreography on hour change (if in auto/random mode)
+    if (hourChanged) {
+      choreo_on_hour_change();
+      // If choreography started, don't update time display yet
+      if (choreo_get_state() == CHOREO_PLAYING) {
+        return;
+      }
+    }
+
     switch(get_clock_mode())
     {
       case LAZY:

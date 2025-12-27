@@ -23,16 +23,67 @@
             <div class="timeline-section">
                 <h2>Keyframes</h2>
                 <div class="timeline-controls">
-                    <button onclick="addKeyframe()">+ Ajouter Keyframe</button>
+                    <button onclick="addKeyframe()">+ Ajouter</button>
                     <button onclick="duplicateKeyframe()">📋 Dupliquer</button>
                     <button onclick="deleteKeyframe()">🗑️ Supprimer</button>
+                    <span class="controls-separator">|</span>
+                    <button onclick="moveKeyframeUp()" title="Déplacer vers le début">◀ Avant</button>
+                    <button onclick="moveKeyframeDown()" title="Déplacer vers la fin">Après ▶</button>
+                    <span class="controls-separator">|</span>
+                    <button onclick="setLoopStart()" title="Définir début de boucle" class="loop-btn">[ Début</button>
+                    <button onclick="setLoopEnd()" title="Définir fin de boucle" class="loop-btn">Fin ]</button>
+                    <label class="loop-count-label" title="Nombre de répétitions (0 = infini)">
+                        <input type="number" id="loopCountInput" value="3" min="0" max="99" onchange="updateLoopCount(this.value)">x
+                    </label>
+                    <button onclick="clearLoop()" title="Supprimer la boucle" class="loop-btn-clear">Suppr. boucle</button>
+                    <span id="loopInfo" class="loop-info" style="display:none;"></span>
                 </div>
+                <p class="timeline-hint">💡 Glissez-déposez les keyframes pour les réordonner | Utilisez [ et ] pour définir une boucle</p>
                 <div class="timeline" id="timeline"></div>
             </div>
 
             <!-- Clock Matrix -->
             <div class="matrix-section">
                 <h2>Keyframe <span id="currentKeyframeNum">1</span></h2>
+
+                <!-- Motion Parameters -->
+                <div class="motion-params">
+                    <div class="param-group">
+                        <label for="kfSpeed">Vitesse</label>
+                        <input type="number" id="kfSpeed" value="400" min="200" max="5000" step="50" onchange="saveSpeed()">
+                        <span class="param-unit">pas/s</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="kfAccel">Accélération</label>
+                        <input type="number" id="kfAccel" value="150" min="100" max="2000" step="50" onchange="saveAccel()">
+                        <span class="param-unit">pas/s²</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="kfDelay">Délai après</label>
+                        <input type="number" id="kfDelay" value="0" min="0" max="10000" step="100" onchange="saveDelay()">
+                        <span class="param-unit">ms</span>
+                    </div>
+                    <div class="param-separator"></div>
+                    <div class="param-group">
+                        <label for="kfCascadeMode">Cascade</label>
+                        <select id="kfCascadeMode" onchange="saveCascadeMode()">
+                            <option value="none">Aucune</option>
+                            <option value="column">Colonne</option>
+                            <option value="row">Ligne</option>
+                            <option value="diagonal">Diagonale</option>
+                            <option value="ripple">Ondulation (centre vers ext.)</option>
+                            <option value="ripple_in">Ondulation (ext. vers centre)</option>
+                            <option value="snake">Serpent</option>
+                            <option value="spiral">Spirale</option>
+                        </select>
+                    </div>
+                    <div class="param-group" id="cascadeDelayGroup" style="display: none;">
+                        <label for="kfCascadeDelay">Délai cascade</label>
+                        <input type="number" id="kfCascadeDelay" value="100" min="0" max="2000" step="50" onchange="saveCascadeDelay()">
+                        <span class="param-unit">ms</span>
+                    </div>
+                </div>
+
                 <div class="matrix-header">
                     <div class="slave-labels">
                         <span></span>
@@ -106,6 +157,20 @@
             <button onclick="copyCode()">📋 Copier</button>
             <pre id="codeOutput"></pre>
         </div>
+    </div>
+
+    <!-- Keyboard shortcuts help -->
+    <div class="shortcuts-help">
+        <h4>Raccourcis clavier</h4>
+        <p><kbd>Ctrl</kbd>+<kbd>C</kbd> Copier</p>
+        <p><kbd>Ctrl</kbd>+<kbd>V</kbd> Coller</p>
+        <p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> Symétrie verticale</p>
+        <p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> Symétrie horizontale</p>
+        <p><kbd>Ctrl</kbd>+<kbd>A</kbd> Tout sélectionner</p>
+        <p><kbd>Escape</kbd> Désélectionner</p>
+        <p><kbd>Delete</kbd> Réinitialiser</p>
+        <p><kbd>←</kbd> <kbd>→</kbd> Keyframes</p>
+        <p><kbd>Shift</kbd>+clic Multi-sélection</p>
     </div>
 
     <script src="app.js"></script>

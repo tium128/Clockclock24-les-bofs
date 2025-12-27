@@ -1,7 +1,7 @@
 #include "clock_manager.h"
 
-int _speed = 200;
-int _acceleration = 100;
+int _speed = 1000;
+int _acceleration = 500;
 int _direction = MIN_DISTANCE;
 
 // Changes when the clock state changes

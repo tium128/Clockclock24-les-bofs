@@ -12,6 +12,10 @@ int _wireless_mode;
 char _ssid[64];
 char _password[64];
 
+// Choreography settings
+int _choreo_mode;
+uint16_t _choreo_enabled_mask;
+
 void begin_config()
 {
   prefs.begin("clockclock24");
@@ -24,6 +28,10 @@ void begin_config()
     prefs.getBytes("sleep_time", _sleep_time, sizeof(_sleep_time));
   else
     memset(_sleep_time, 0, sizeof(_sleep_time));
+
+  // Choreography settings
+  _choreo_mode = prefs.getInt("choreo_mode", 0);  // Default: OFF
+  _choreo_enabled_mask = prefs.getUShort("choreo_mask", 0xFFFF);  // Default: all enabled
 }
 
 void end_config()
@@ -39,6 +47,8 @@ void clear_config()
   strncpy(_ssid, "", sizeof(_ssid));
   strncpy(_password, "", sizeof(_password));
   memset(_sleep_time, 0, sizeof(_sleep_time));
+  _choreo_mode = 0;
+  _choreo_enabled_mask = 0xFFFF;
 }
 
 int get_clock_mode()
@@ -109,4 +119,26 @@ void set_password(const char *value)
 {
   strncpy(_password, value, sizeof(_password));
   prefs.putString("password", value);
+}
+
+int get_choreo_mode()
+{
+  return _choreo_mode;
+}
+
+void set_choreo_mode(int value)
+{
+  _choreo_mode = value;
+  prefs.putInt("choreo_mode", value);
+}
+
+uint16_t get_choreo_enabled_mask()
+{
+  return _choreo_enabled_mask;
+}
+
+void set_choreo_enabled_mask(uint16_t value)
+{
+  _choreo_enabled_mask = value;
+  prefs.putUShort("choreo_mask", value);
 }

@@ -10,6 +10,18 @@
 #define CHOREO_NAME_LEN 32
 #define CHOREO_COMMENT_LEN 128
 
+// Cascade modes for keyframe transitions
+typedef enum {
+    CASCADE_NONE = 0,
+    CASCADE_COLUMN = 1,
+    CASCADE_ROW = 2,
+    CASCADE_DIAGONAL = 3,
+    CASCADE_RIPPLE = 4,     // Ripple from center outward (like a stone in water)
+    CASCADE_RIPPLE_IN = 5,  // Ripple from edges to center (reverse ripple)
+    CASCADE_SNAKE = 6,      // Snake pattern left-to-right, alternating rows
+    CASCADE_SPIRAL = 7      // Spiral from center outward
+} t_cascade_mode;
+
 // Clock data for a single clock in a keyframe
 typedef struct {
     uint16_t angleH;
@@ -22,8 +34,13 @@ typedef struct {
 typedef struct {
     t_choreo_clock clocks[8][3];
     char comment[CHOREO_COMMENT_LEN];
-    uint16_t transitionMs;  // Duration to reach this keyframe
-    uint16_t delayMs;       // Delay before starting next transition
+    // Motion parameters
+    uint16_t speed;         // Motor speed (steps/sec), default 400
+    uint16_t accel;         // Acceleration (steps/sec²), default 150
+    uint16_t delayMs;       // Delay AFTER reaching this keyframe (ms)
+    // Cascade effect
+    t_cascade_mode cascadeMode;  // How to stagger the movements
+    uint16_t cascadeDelayMs;     // Delay between groups (ms)
 } t_keyframe;
 
 // A choreography
@@ -40,6 +57,14 @@ typedef enum {
     CHOREO_PLAYING,
     CHOREO_PAUSED
 } t_choreo_state;
+
+// Choreography auto-play mode
+typedef enum {
+    CHOREO_MODE_OFF = 0,      // Disabled - only manual play
+    CHOREO_MODE_MANUAL = 1,   // Manual trigger only
+    CHOREO_MODE_AUTO = 2,     // Auto-play on hour change
+    CHOREO_MODE_RANDOM = 3    // Random pick on hour change
+} t_choreo_mode;
 
 // Initialize choreography system (call once at startup)
 void choreo_init();
@@ -76,5 +101,19 @@ void choreo_apply_keyframe(int index);
 
 // Get current choreography as JSON (for web interface)
 String choreo_get_json();
+
+// Auto-play mode management
+void choreo_set_mode(t_choreo_mode mode);
+t_choreo_mode choreo_get_mode();
+
+// Enable/disable choreographies for random mode
+void choreo_set_enabled(const char* name, bool enabled);
+bool choreo_is_enabled(const char* name);
+
+// Trigger choreography on hour change (call from main loop when hour changes)
+void choreo_on_hour_change();
+
+// Get total choreography count
+int choreo_get_count();
 
 #endif

@@ -126,4 +126,28 @@ void set_ssid(const char *value);
  */
 void set_password(const char *value);
 
+/**
+ * Gets choreography auto-play mode
+ * @return mode value (0=OFF, 1=MANUAL, 2=AUTO, 3=RANDOM)
+ */
+int get_choreo_mode();
+
+/**
+ * Sets choreography auto-play mode
+ * @param value   mode value (0=OFF, 1=MANUAL, 2=AUTO, 3=RANDOM)
+ */
+void set_choreo_mode(int value);
+
+/**
+ * Gets choreography enabled mask (bitmask for up to 16 choreographies)
+ * @return bitmask where bit N = choreography N enabled
+ */
+uint16_t get_choreo_enabled_mask();
+
+/**
+ * Sets choreography enabled mask
+ * @param value   bitmask where bit N = choreography N enabled
+ */
+void set_choreo_enabled_mask(uint16_t value);
+
 #endif
